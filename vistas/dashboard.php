@@ -79,6 +79,13 @@ if (!isset($_SESSION['usuario'])) {
                 </div>
                 <!-- Accesos rápidos -->
                 
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <a href="listar_usuarios.php" class="btn btn-outline-dark btn-lg w-100">
+                            <i class="bi bi-people"></i> Administrar usuarios
+                        </a>
+                    </div>
+                </div>
                 <!-- NO HAY FORMULARIO DE CONSULTA ACÁ -->
             </main>
         </div>

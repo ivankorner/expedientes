@@ -10,14 +10,17 @@ if (isset($_SESSION['usuario'])) {
     exit;
 }
 
+require_once __DIR__ . '/../db/connection.php';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $usuario = $_POST['usuario'] ?? '';
+    $usuario = trim($_POST['usuario'] ?? '');
     $contrasena = $_POST['contrasena'] ?? '';
-
-    // Lógica de autenticación (usuario: admin, contrasena: admin)
-    if ($usuario === 'admin' && $contrasena === 'admin') {
-        $_SESSION['usuario'] = $usuario;
-        // Esta redirección ya estaba correcta si el login es exitoso
+    $stmt = $pdo->prepare('SELECT * FROM usuarios WHERE username = ? AND is_active = 1 LIMIT 1');
+    $stmt->execute([$usuario]);
+    $user = $stmt->fetch();
+    if ($user && password_verify($contrasena, $user['password_hash'])) {
+        $_SESSION['usuario'] = $user['username'];
+        $_SESSION['user_id'] = $user['id'];
+        $_SESSION['role'] = $user['role'];
         header('Location: dashboard.php');
         exit;
     } else {
