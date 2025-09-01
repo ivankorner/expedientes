@@ -29,6 +29,34 @@ try {
     $stmt->execute([$id]);
     $expediente = $stmt->fetch(PDO::FETCH_ASSOC);
 
+    // Obtener el ID del iniciador original
+    $iniciador_id = '';
+    // Buscar en personas físicas
+    foreach ($personas_fisicas as $pf) {
+        if ($expediente['iniciador'] === $pf['nombre_completo']) {
+            $iniciador_id = 'PF-' . $pf['id'];
+            break;
+        }
+    }
+    // Buscar en personas jurídicas
+    if (!$iniciador_id) {
+        foreach ($personas_juridicas as $pj) {
+            if ($expediente['iniciador'] === $pj['nombre_completo']) {
+                $iniciador_id = 'PJ-' . $pj['id'];
+                break;
+            }
+        }
+    }
+    // Buscar en concejales
+    if (!$iniciador_id) {
+        foreach ($concejales as $co) {
+            if ($expediente['iniciador'] === $co['nombre_completo']) {
+                $iniciador_id = 'CO-' . $co['id'];
+                break;
+            }
+        }
+    }
+
     if (!$expediente) {
         $_SESSION['mensaje'] = "Expediente no encontrado";
         $_SESSION['tipo_mensaje'] = "danger";
@@ -36,6 +64,19 @@ try {
         exit;
     }
 
+    // Consultar iniciadores
+    $db_iniciadores = new PDO(
+        "mysql:host=localhost;dbname=Iniciadores;charset=utf8mb4",
+        "root",
+        "",
+        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+    );
+    $stmt = $db_iniciadores->query("SELECT id, CONCAT(apellido, ', ', nombre, ' (', dni, ')') as nombre_completo FROM persona_fisica ORDER BY apellido, nombre");
+    $personas_fisicas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $stmt = $db_iniciadores->query("SELECT id, CONCAT(razon_social, ' (', cuit, ')') as nombre_completo FROM persona_juri_entidad ORDER BY razon_social");
+    $personas_juridicas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $stmt = $db_iniciadores->query("SELECT id, CONCAT(apellido, ', ', nombre, ' - ', bloque) as nombre_completo FROM concejales ORDER BY apellido, nombre");
+    $concejales = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     $_SESSION['mensaje'] = "Error al cargar el expediente: " . $e->getMessage();
     $_SESSION['tipo_mensaje'] = "danger";
@@ -218,13 +259,39 @@ input[readonly] {
                             </div>
 
                             <!-- Iniciador -->
-                            <div class="col-12">
+                            <div class="col-12 mb-2">
                                 <label for="iniciador" class="form-label">Iniciador</label>
-                                <input type="text" 
-                                       id="iniciador" 
-                                       name="iniciador" 
-                                       class="form-control" 
-                                       value="<?= htmlspecialchars($expediente['iniciador'] ?? '') ?>">
+                                <select id="iniciador" name="iniciador" class="form-select" required>
+                                    <option value="">Seleccione un iniciador...</option>
+                                    <?php if (!empty($personas_fisicas)): ?>
+                                        <optgroup label="Personas Físicas">
+                                            <?php foreach ($personas_fisicas as $persona): ?>
+                                                <option value="PF-<?= $persona['id'] ?>" <?= ($iniciador_id === 'PF-'.$persona['id']) ? 'selected' : '' ?>>
+                                                    <?= htmlspecialchars($persona['nombre_completo']) ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </optgroup>
+                                    <?php endif; ?>
+                                    <?php if (!empty($personas_juridicas)): ?>
+                                        <optgroup label="Personas Jurídicas">
+                                            <?php foreach ($personas_juridicas as $entidad): ?>
+                                                <option value="PJ-<?= $entidad['id'] ?>" <?= ($iniciador_id === 'PJ-'.$entidad['id']) ? 'selected' : '' ?>>
+                                                    <?= htmlspecialchars($entidad['nombre_completo']) ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </optgroup>
+                                    <?php endif; ?>
+                                    <?php if (!empty($concejales)): ?>
+                                        <optgroup label="Concejales">
+                                            <?php foreach ($concejales as $concejal): ?>
+                                                <option value="CO-<?= $concejal['id'] ?>" <?= ($iniciador_id === 'CO-'.$concejal['id']) ? 'selected' : '' ?>>
+                                                    <?= htmlspecialchars($concejal['nombre_completo']) ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </optgroup>
+                                    <?php endif; ?>
+                                </select>
+                                <div class="invalid-feedback">Por favor seleccione un iniciador</div>
                             </div>
                         </div>
 
@@ -249,6 +316,22 @@ input[readonly] {
 
     <!-- Scripts Bootstrap -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inicializar Select2 en el campo iniciador
+        $('#iniciador').select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            placeholder: 'Seleccione o busque un iniciador...',
+            allowClear: true,
+            language: 'es'
+        });
+    });
+    </script>
     <script>
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.querySelector('form');

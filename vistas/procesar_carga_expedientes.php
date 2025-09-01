@@ -48,6 +48,32 @@ try {
     // Iniciar transacción
     $db->beginTransaction();
 
+    // Obtener nombre completo del iniciador desde la base Iniciadores
+    $iniciador_id = sanear_input($_POST['iniciador'] ?? '');
+    $nombre_iniciador = '';
+    if (preg_match('/^(PF|PJ|CO)-(\d+)$/', $iniciador_id, $matches)) {
+        $tipo = $matches[1];
+        $id = (int)$matches[2];
+        $db_iniciadores = new PDO(
+            "mysql:host=localhost;dbname=Iniciadores;charset=utf8mb4",
+            "root",
+            "",
+            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+        );
+        if ($tipo === 'PF') {
+            $stmt = $db_iniciadores->prepare("SELECT CONCAT(apellido, ', ', nombre, ' (', dni, ')') as nombre_completo FROM persona_fisica WHERE id = ?");
+        } elseif ($tipo === 'PJ') {
+            $stmt = $db_iniciadores->prepare("SELECT CONCAT(razon_social, ' (', cuit, ')') as nombre_completo FROM persona_juri_entidad WHERE id = ?");
+        } elseif ($tipo === 'CO') {
+            $stmt = $db_iniciadores->prepare("SELECT CONCAT(apellido, ', ', nombre, ' - ', bloque) as nombre_completo FROM concejales WHERE id = ?");
+        }
+        $stmt->execute([$id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($row && !empty($row['nombre_completo'])) {
+            $nombre_iniciador = $row['nombre_completo'];
+        }
+    }
+
     // Preparar datos
     $data = [
         'numero' => filter_var($_POST['numero'], FILTER_VALIDATE_INT),
@@ -58,7 +84,7 @@ try {
         'fecha_hora_ingreso' => sanear_input($_POST['fecha_hora_ingreso']),
         'lugar' => sanear_input($_POST['lugar'] ?? ''),
         'extracto' => sanear_input($_POST['extracto'] ?? ''),
-        'iniciador' => sanear_input($_POST['iniciador'] ?? '')
+        'iniciador' => $nombre_iniciador
     ];
 
     // Validar datos

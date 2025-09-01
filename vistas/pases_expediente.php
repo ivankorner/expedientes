@@ -118,7 +118,19 @@ try {
                                         <option value="Comision V">Comisión V</option>
                                         <option value="Comision VI">Comisión VI</option>
                                         <option value="Comision VII">Comisión VII</option>
+                                        <option value="Concejo Comisión">Concejo Comisión</option>
+                                        <option value="Asesoria Legal">Asesoria Legal</option>
+                                        <option value="Asesoria Contable">Asesoria Contable</option>
+                                        <option value="Secretaria Legislativa Administrativa">Secretaria Legislativa Administrativa</option>
+                                        <option value="Secretaria Legislativa Parlamentaria">Secretaria Legislativa Parlamentaria</option>
+                                        <option value="Secretaria Legal y Técnica">Secretaria Legal y Técnica</option>
+                                        <option value="Secretaria Comunicacion e Informacion Parlamentaria">Secretaria Comunicacion e Informacion Parlamentaria</option>
+                                        <option value="Presidencia">Presidencia</option>
+                                        <option value="Secretaria Comunicacion e Informacion Parlamentaria">D.E.M</option>
+                                        <option value="Secretaria Comunicacion e Informacion Parlamentaria">Concejo Estudiantil</option>
                                         <option value="Archivo">Archivo</option>
+
+
                                     </select>
                                 </div>
                                 <div class="col-md-6">
@@ -183,44 +195,27 @@ try {
     $porcentaje = ($horas_desde_ingreso / $max_horas) * 100;
 ?>
 <tr>
-    <!-- Fecha y Hora -->
     <td><?= $pase['fecha_formateada'] ?></td>
-
-    <!-- Desde -->
     <td><?= htmlspecialchars($pase['lugar_anterior']) ?></td>
-
-    <!-- Hacia -->
     <td><?= htmlspecialchars($pase['lugar_nuevo']) ?></td>
-
-    <!-- Tiempo desde ingreso -->
-    <td>
-        <?= $dias_desde_ingreso ?> días,
-        <?= $horas_resto_ingreso ?> horas
-    </td>
-
-    <!-- Tiempo desde último pase -->
+    <td><?= $dias_desde_ingreso ?> días, <?= $horas_resto_ingreso ?> horas</td>
     <td>
         <?php if ($horas_desde_ultimo): ?>
-            <?= $dias_desde_ultimo ?> días,
-            <?= $horas_resto_ultimo ?> horas
-        <?php else: ?>
-            Primer pase
-        <?php endif; ?>
+            <?= $dias_desde_ultimo ?> días, <?= $horas_resto_ultimo ?> horas
+        <?php else: ?>Primer pase<?php endif; ?>
     </td>
-
-    <!-- Línea de tiempo -->
     <td style="width: 200px;">
         <div class="progress" style="height: 20px;">
-            <div class="progress-bar bg-info" 
-                 role="progressbar" 
-                 style="width: <?= $porcentaje ?>%"
-                 aria-valuenow="<?= $porcentaje ?>"
-                 aria-valuemin="0" 
-                 aria-valuemax="100"
-                 data-bs-toggle="tooltip"
-                 title="<?= "$dias_desde_ingreso días, $horas_resto_ingreso horas" ?>">
+            <div class="progress-bar bg-info" role="progressbar" style="width: <?= $porcentaje ?>%"
+                 aria-valuenow="<?= $porcentaje ?>" aria-valuemin="0" aria-valuemax="100"
+                 data-bs-toggle="tooltip" title="<?= "$dias_desde_ingreso días, $horas_resto_ingreso horas" ?>">
             </div>
         </div>
+    </td>
+    <td>
+        <button type="button" class="btn btn-sm btn-outline-primary" onclick="editarPaseModal('<?= $pase['fecha_cambio'] ?>','<?= htmlspecialchars($pase['lugar_nuevo'],ENT_QUOTES) ?>',<?= $pase['id'] ?? 0 ?>)">
+            <i class="bi bi-pencil"></i> Editar
+        </button>
     </td>
 </tr>
 <?php endforeach; ?>
@@ -234,6 +229,54 @@ try {
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function editarPaseModal(fecha, lugar, id) {
+    const lugares = [
+        'Mesa de Entrada', 'Comision I', 'Comision II', 'Comision III', 'Comision IV', 'Comision V', 'Comision VI', 'Comision VII',
+        'Concejo Comisión', 'Asesoria Legal', 'Asesoria Contable', 'Secretaria Legislativa Administrativa',
+        'Secretaria Legislativa Parlamentaria', 'Secretaria Legal y Técnica', 'Secretaria Comunicacion e Informacion Parlamentaria',
+        'Presidencia', 'D.E.M', 'Concejo Estudiantil', 'Archivo'
+    ];
+    let selectHtml = `<select id='lugarEdit' class='swal2-input' style='width:100%;margin-top:8px;'>`;
+    lugares.forEach(l => {
+        selectHtml += `<option value="${l}"${l === lugar ? ' selected' : ''}>${l}</option>`;
+    });
+    selectHtml += `</select>`;
+    Swal.fire({
+        title: 'Editar pase',
+        html: `<input type='datetime-local' id='fechaEdit' class='swal2-input' value='${fecha.replace(' ', 'T')}'><br>${selectHtml}`,
+        showCancelButton: true,
+        confirmButtonText: 'Guardar',
+        cancelButtonText: 'Cancelar',
+        preConfirm: () => {
+            const fechaVal = document.getElementById('fechaEdit').value;
+            const lugarVal = document.getElementById('lugarEdit').value;
+            if (!fechaVal || !lugarVal) {
+                Swal.showValidationMessage('Todos los campos son obligatorios');
+                return false;
+            }
+            return {fecha: fechaVal, lugar: lugarVal};
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch('editar_pase.php', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: `id=${id}&fecha=${encodeURIComponent(result.value.fecha)}&lugar_nuevo=${encodeURIComponent(result.value.lugar)}`
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire('Actualizado', data.message, 'success').then(()=>location.reload());
+                } else {
+                    Swal.fire('Error', data.message, 'error');
+                }
+            })
+            .catch(()=>Swal.fire('Error','No se pudo actualizar','error'));
+        }
+    });
+}
+</script>
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Inicializar tooltips
