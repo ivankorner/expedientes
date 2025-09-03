@@ -246,9 +246,9 @@ try {
 
         <div class="card">
             <div class="card-body">
-                <h3 class="card-title mb-4">
-                    Expediente N°:  <?= e($numero) ?>/<?= e($letra) ?>/<?= e($folio) ?>/<?= e($libro) ?>/<?= e($anio) ?>
-                    
+                <h3 class="card-title mb-4 text-center" style="font-size:1.5rem; font-weight:bold; color:#0d6efd; background:#e9ecef; padding:15px; border-radius:8px;">
+                    <i class="bi bi-file-earmark-text-fill me-2"></i>
+                    Expediente N°: <?= e($numero) ?>/<?= e($letra) ?>/<?= e($folio) ?>/<?= e($libro) ?>/<?= e($anio) ?>
                 </h3>
 
                 <?php if ($expediente): ?>
@@ -288,15 +288,7 @@ try {
                                     <th>Iniciador:</th>
                                     <td><?= e($expediente['iniciador']) ?></td>
                                 </tr>
-                                 <tr>
-                                    <th>Ubicación Actual:</th>
-                                    <td><span class="badge rounded-pill text-bg-warning"><?= e($expediente['lugar']) ?></span>
-
-                                        
-                                    
-                                    
-                                    </td>
-                                </tr>
+                               
                             </tbody>
                         </table>
                     </div>
