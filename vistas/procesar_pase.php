@@ -12,8 +12,10 @@ try {
     $lugar_anterior = trim($_POST['lugar_anterior'] ?? '');
     $lugar_nuevo = trim($_POST['lugar_nuevo'] ?? '');
     $fecha_hora = $_POST['fecha_hora'] ?? '';
+    $tipo_movimiento = $_POST['tipo_movimiento'] ?? '';
+    $numero_acta = trim($_POST['numero_acta'] ?? '');
 
-    if (!$expediente_id || !$lugar_anterior || !$lugar_nuevo || !$fecha_hora) {
+    if (!$expediente_id || !$lugar_anterior || !$lugar_nuevo || !$fecha_hora || !$tipo_movimiento) {
         throw new Exception('Todos los campos son requeridos');
     }
 
@@ -32,15 +34,18 @@ try {
                 expediente_id, 
                 lugar_anterior, 
                 lugar_nuevo, 
-                fecha_cambio
-            ) VALUES (?, ?, ?, ?)";
-            
+                fecha_cambio,
+                tipo_movimiento,
+                numero_acta
+            ) VALUES (?, ?, ?, ?, ?, ?)";
     $stmt = $db->prepare($sql);
     $stmt->execute([
         $expediente_id,
         $lugar_anterior,
         $lugar_nuevo,
-        $fecha_hora
+        $fecha_hora,
+        $tipo_movimiento,
+        $numero_acta
     ]);
 
     // Actualizar lugar actual del expediente

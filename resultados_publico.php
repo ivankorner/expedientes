@@ -78,19 +78,20 @@ try {
 
     // Agregar después de obtener el expediente
     if ($expediente) {
-        // Consultar historial de lugares
-        $sql = "SELECT 
-                    fecha_cambio,
-                    DATE_FORMAT(fecha_cambio, '%d/%m/%Y %H:%i') as fecha_formateada,
-                    lugar_anterior,
-                    lugar_nuevo
-                FROM historial_lugares 
-                WHERE expediente_id = :id
-                ORDER BY fecha_cambio ASC";
+    // Consultar historial de lugares
+    $sql = "SELECT 
+            fecha_cambio,
+            DATE_FORMAT(fecha_cambio, '%d/%m/%Y %H:%i') as fecha_formateada,
+            lugar_anterior,
+            lugar_nuevo,
+            tipo_movimiento
+        FROM historial_lugares 
+        WHERE expediente_id = :id
+        ORDER BY fecha_cambio ASC";
                 
-        $stmt = $db->prepare($sql);
-        $stmt->execute([':id' => $expediente['id']]);
-        $historial = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $stmt = $db->prepare($sql);
+    $stmt->execute([':id' => $expediente['id']]);
+    $historial = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     // Agregar después de obtener el historial
@@ -278,15 +279,7 @@ try {
                                     <th>Fecha de Ingreso:</th>
                                     <td><?= date('d/m/Y H:i', strtotime($expediente['fecha_hora_ingreso'])) ?></td>
                                 </tr>
-                                <tr>
-                                    <th>Ubicación Actual:</th>
-                                    <td><span class="badge rounded-pill text-bg-warning"><?= e($expediente['lugar']) ?></span>
-
-                                        
-                                    
-                                    
-                                    </td>
-                                </tr>
+                               
                                 <tr>
                                     <th>Extracto:</th>
                                     <td><?= e($expediente['extracto']) ?></td>
@@ -294,6 +287,15 @@ try {
                                 <tr>
                                     <th>Iniciador:</th>
                                     <td><?= e($expediente['iniciador']) ?></td>
+                                </tr>
+                                 <tr>
+                                    <th>Ubicación Actual:</th>
+                                    <td><span class="badge rounded-pill text-bg-warning"><?= e($expediente['lugar']) ?></span>
+
+                                        
+                                    
+                                    
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
@@ -320,11 +322,25 @@ try {
                                 <?php foreach ($historial as $index => $pase): ?>
                                     <div class="tracking-container <?= $index % 2 == 0 ? 'tracking-right' : 'tracking-left' ?>">
                                         <div class="tracking-content">
-                                            <h3>Cambio de Ubicación</h3>
-                                            <p>De: <?= e($pase['lugar_anterior']) ?></p>
-                                            <p>A: <?= e($pase['lugar_nuevo']) ?></p>
-                                            <p class="text-muted">
-                                                <i class="bi bi-clock"></i> 
+                                            <h3>
+                                                <i class="bi bi-geo-alt-fill text-danger"></i>
+                                                Traslado de Expediente
+                                            </h3>
+                                            <p>
+                                                <span class="badge bg-primary">
+                                                    <i class="bi bi-arrow-right-circle"></i>
+                                                    <?= e($pase['tipo_movimiento']) ?>
+                                                </span>
+                                            </p>
+                                          
+                                            <p>
+                                                <span class="fw-semibold text-secondary">
+                                                    <i class="bi bi-box-arrow-in-right"></i> A:
+                                                </span>
+                                                <span class="badge bg-success"><?= e($pase['lugar_nuevo']) ?></span>
+                                            </p>
+                                            <p class="text-muted mb-0">
+                                                <i class="bi bi-calendar-event"></i>
                                                 <?= $pase['fecha_formateada'] ?>
                                             </p>
                                         </div>

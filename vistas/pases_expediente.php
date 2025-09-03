@@ -30,6 +30,7 @@ try {
     // Obtener historial de pases
     $stmt = $db->prepare("
         SELECT 
+            hl.id,
             hl.fecha_cambio,
             DATE_FORMAT(hl.fecha_cambio, '%d/%m/%Y %H:%i') as fecha_formateada,
             hl.lugar_anterior,
@@ -39,6 +40,8 @@ try {
                 LAG(hl.fecha_cambio) OVER (ORDER BY hl.fecha_cambio),
                 hl.fecha_cambio
             ) as horas_desde_ultimo_pase,
+            hl.tipo_movimiento,
+            hl.numero_acta,
             0 as es_ingreso
         FROM historial_lugares hl
         JOIN expedientes e ON hl.expediente_id = e.id
@@ -104,9 +107,8 @@ try {
                         <form id="formPase" action="procesar_pase.php" method="POST">
                             <input type="hidden" name="expediente_id" value="<?= $expediente['id'] ?>">
                             <input type="hidden" name="lugar_anterior" value="<?= htmlspecialchars($expediente['lugar']) ?>">
-                            
                             <div class="row g-3">
-                                <div class="col-md-6">
+                                <div class="col-md-3">
                                     <label for="lugar_nuevo" class="form-label">Nuevo lugar *</label>
                                     <select class="form-select" id="lugar_nuevo" name="lugar_nuevo" required>
                                         <option value="">Seleccione...</option>
@@ -126,20 +128,30 @@ try {
                                         <option value="Secretaria Legal y Técnica">Secretaria Legal y Técnica</option>
                                         <option value="Secretaria Comunicacion e Informacion Parlamentaria">Secretaria Comunicacion e Informacion Parlamentaria</option>
                                         <option value="Presidencia">Presidencia</option>
-                                        <option value="Secretaria Comunicacion e Informacion Parlamentaria">D.E.M</option>
-                                        <option value="Secretaria Comunicacion e Informacion Parlamentaria">Concejo Estudiantil</option>
+                                        <option value="D.E.M">D.E.M</option>
+                                        <option value="Concejo Estudiantil">Concejo Estudiantil</option>
                                         <option value="Archivo">Archivo</option>
-
-
                                     </select>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-3">
+                                    <label for="tipo_movimiento" class="form-label">Tipo de movimiento *</label>
+                                    <select class="form-select" id="tipo_movimiento" name="tipo_movimiento" required>
+                                        <option value="">Seleccione...</option>
+                                        <option value="Ingreso">Ingreso</option>
+                                        <option value="Salida">Salida</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
                                     <label for="fecha_hora" class="form-label">Fecha y hora *</label>
                                     <input type="datetime-local" 
                                            class="form-control" 
                                            id="fecha_hora" 
                                            name="fecha_hora"
                                            required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="numero_acta" class="form-label">Número de Acta</label>
+                                    <input type="text" class="form-control" id="numero_acta" name="numero_acta" maxlength="30" placeholder="Ej: 123/2025">
                                 </div>
                             </div>
                             <div class="mt-3">
@@ -176,6 +188,8 @@ try {
                                         <th>Fecha y Hora</th>
                                         <th>Desde <i class="bi bi-arrow-right"></i></th>
                                         <th>Hacia</th>
+                                        <th>Movimiento</th>
+                                        <th>N° de Acta</th>
                                         <th>Tiempo desde ingreso</th>
                                         <th>Tiempo desde último pase</th>
                                         <th>Línea de tiempo</th>
@@ -198,12 +212,15 @@ try {
     <td><?= $pase['fecha_formateada'] ?></td>
     <td><?= htmlspecialchars($pase['lugar_anterior']) ?></td>
     <td><?= htmlspecialchars($pase['lugar_nuevo']) ?></td>
+    <td><?= htmlspecialchars($pase['tipo_movimiento'] ?? (($pase['lugar_anterior'] === $pase['lugar_nuevo']) ? 'Ingreso' : 'Salida')) ?></td>
+    <td><?= htmlspecialchars($pase['numero_acta'] ?? '') ?></td>
     <td><?= $dias_desde_ingreso ?> días, <?= $horas_resto_ingreso ?> horas</td>
     <td>
         <?php if ($horas_desde_ultimo): ?>
             <?= $dias_desde_ultimo ?> días, <?= $horas_resto_ultimo ?> horas
         <?php else: ?>Primer pase<?php endif; ?>
     </td>
+    <!--
     <td style="width: 200px;">
         <div class="progress" style="height: 20px;">
             <div class="progress-bar bg-info" role="progressbar" style="width: <?= $porcentaje ?>%"
@@ -212,9 +229,13 @@ try {
             </div>
         </div>
     </td>
+    -->
     <td>
         <button type="button" class="btn btn-sm btn-outline-primary" onclick="editarPaseModal('<?= $pase['fecha_cambio'] ?>','<?= htmlspecialchars($pase['lugar_nuevo'],ENT_QUOTES) ?>',<?= $pase['id'] ?? 0 ?>)">
             <i class="bi bi-pencil"></i> Editar
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-danger ms-1" onclick="eliminarPase(<?= $pase['id'] ?? 0 ?>)">
+            <i class="bi bi-trash"></i> Eliminar
         </button>
     </td>
 </tr>
@@ -230,6 +251,43 @@ try {
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+function eliminarPase(id) {
+    Swal.fire({
+        title: '¿Eliminar pase?',
+        text: 'Esta acción no se puede deshacer.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6c757d'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch('eliminar_pase.php', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: `id=${id}`
+            })
+            .then(async res => {
+                let data;
+                try {
+                    data = await res.json();
+                } catch (e) {
+                    Swal.fire('Error', 'Respuesta inesperada del servidor', 'error');
+                    return;
+                }
+                if (data.success) {
+                    Swal.fire('Eliminado', data.message, 'success').then(()=>location.reload());
+                } else {
+                    Swal.fire('Error', data.message || 'No se pudo eliminar', 'error');
+                }
+            })
+            .catch(err => {
+                Swal.fire('Error', 'No se pudo conectar con el servidor', 'error');
+            });
+        }
+    });
+}
 function editarPaseModal(fecha, lugar, id) {
     const lugares = [
         'Mesa de Entrada', 'Comision I', 'Comision II', 'Comision III', 'Comision IV', 'Comision V', 'Comision VI', 'Comision VII',
