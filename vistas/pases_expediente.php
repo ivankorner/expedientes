@@ -11,10 +11,11 @@ if (!$id) {
 }
 
 try {
+   // Conectar a la base de datos
     $db = new PDO(
-        "mysql:host=localhost;dbname=expedientes;charset=utf8mb4",
-        "root",
-        "",
+        "mysql:host=localhost;dbname=c2810161_iniciad;charset=utf8mb4",
+        "c2810161_iniciad",
+        "li62veMAdu",
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
     );
 
@@ -68,8 +69,10 @@ try {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link rel="stylesheet" href="/expedientes/publico/css/estilos.css">
+    <link rel="stylesheet" href="/publico/css/estilos.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         .table-primary {
             --bs-table-bg: rgba(13, 110, 253, 0.1);
@@ -90,11 +93,11 @@ try {
     
     <div class="container-fluid">
         <div class="row">
-            <?php require 'sidebar.php'; ?>
-            
+            <?php require '../vistas/sidebar.php'; ?>
+
             <main class="col-12 col-md-10 ms-sm-auto px-4">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                    <h1>Pases de Expediente <?= "{$expediente['numero']}/{$expediente['letra']}/{$expediente['anio']}" ?></h1>
+                    <h1>Pases de Expediente <?= "{$expediente['numero']}/{$expediente['letra']}/{$expediente['folio']}/{$expediente['libro']}/{$expediente['anio']}" ?></h1>
                     <a href="listar_expedientes.php" class="btn btn-secondary">
                         <i class="bi bi-arrow-left"></i> Volver
                     </a>
@@ -155,7 +158,7 @@ try {
                                 </div>
                             </div>
                             <div class="mt-3">
-                                <button type="submit" class="btn btn-primary">
+                                <button type="submit" class="btn btn-primary px-4">
                                     <i class="bi bi-save"></i> Guardar Pase
                                 </button>
                             </div>
@@ -191,7 +194,7 @@ try {
                                         <th>Movimiento</th>
                                         <th>N° de Acta</th>
                                         <th>Tiempo desde ingreso</th>
-                                        <th>Tiempo desde último pase</th>
+                                        
                                         <th>Línea de tiempo</th>
                                     </tr>
                                 </thead>
@@ -215,11 +218,7 @@ try {
     <td><?= htmlspecialchars($pase['tipo_movimiento'] ?? (($pase['lugar_anterior'] === $pase['lugar_nuevo']) ? 'Ingreso' : 'Salida')) ?></td>
     <td><?= htmlspecialchars($pase['numero_acta'] ?? '') ?></td>
     <td><?= $dias_desde_ingreso ?> días, <?= $horas_resto_ingreso ?> horas</td>
-    <td>
-        <?php if ($horas_desde_ultimo): ?>
-            <?= $dias_desde_ultimo ?> días, <?= $horas_resto_ultimo ?> horas
-        <?php else: ?>Primer pase<?php endif; ?>
-    </td>
+    
     <!--
     <td style="width: 200px;">
         <div class="progress" style="height: 20px;">
@@ -251,6 +250,50 @@ try {
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+// Manejar envío del formulario de nuevo pase
+document.getElementById('formPase').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('procesar_pase.php', {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire({
+                title: '¡Éxito!',
+                text: data.message,
+                icon: 'success',
+                confirmButtonText: 'Aceptar'
+            }).then(() => {
+                this.reset(); // Limpiar el formulario
+                location.reload(); // Recargar para mostrar el nuevo pase
+            });
+        } else {
+            Swal.fire({
+                title: 'Error',
+                text: data.message,
+                icon: 'error',
+                confirmButtonText: 'Aceptar'
+            });
+        }
+    })
+    .catch(error => {
+        Swal.fire({
+            title: 'Error',
+            text: 'No se pudo conectar con el servidor',
+            icon: 'error',
+            confirmButtonText: 'Aceptar'
+        });
+    });
+});
+
 function eliminarPase(id) {
     Swal.fire({
         title: '¿Eliminar pase?',
@@ -408,7 +451,7 @@ function editarPaseModal(fecha, lugar, id) {
                         }
                     }
                 }
-            });
+            })
     });
     </script>
 </body>

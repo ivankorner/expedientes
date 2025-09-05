@@ -48,11 +48,11 @@ try {
         throw new Exception("Año fuera de rango permitido");
     }
 
-    // Conectar a la base de datos
+   // Conectar a la base de datos
     $db = new PDO(
-        "mysql:host=localhost;dbname=expedientes;charset=utf8mb4",
-        "root",
-        "",
+        "mysql:host=localhost;dbname=c2810161_iniciad;charset=utf8mb4",
+        "c2810161_iniciad",
+        "li62veMAdu",
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
     );
 
@@ -379,9 +379,10 @@ try {
                 <?php endif; ?>
 
                 <div class="mt-4">
-                    <a href="index.php" class="btn btn-primary">
+                    <a href="index.php" class="btn btn-primary px-4">
                         <i class="bi bi-arrow-left"></i> Nueva Consulta
                     </a>
+                    
                 </div>
             </div>
         </div>

@@ -1,12 +1,19 @@
 <?php
 session_start();
+require 'header.php';
+
+// Limpiar mensajes de error que no corresponden a esta página
+if (isset($_SESSION['mensaje']) && strpos($_SESSION['mensaje'], 'ID de expediente') !== false) {
+    unset($_SESSION['mensaje'], $_SESSION['tipo_mensaje']);
+}
+
 
 try {
-    // Conexión a la base de datos
+     // Conectar a la base de datos
     $db = new PDO(
-        "mysql:host=localhost;dbname=expedientes;charset=utf8mb4",
-        "root",
-        "",
+        "mysql:host=localhost;dbname=c2810161_iniciad;charset=utf8mb4",
+        "c2810161_iniciad",
+        "li62veMAdu",
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
     );
 
@@ -100,18 +107,21 @@ try {
 
 <!DOCTYPE html>
 <html lang="es">
-<head>
+    <head>
     <meta charset="UTF-8">
-    <title>Listado de Expedientes</title>
+    <title>Dashboard | Sistema de Expedientes</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Bootstrap CSS + Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="/publico/css/estilos.css?v=3">
+    <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link rel="stylesheet" href="/expedientes/publico/css/estilos.css">
 </head>
 
+
 <body>
-    <?php require 'header.php'; ?>
+
     
     <div class="container-fluid">
         <div class="row">
@@ -172,12 +182,13 @@ try {
                                        value="<?= htmlspecialchars($_GET['iniciador'] ?? '') ?>">
                             </div>
                             <div class="col-12">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="bi bi-search"></i> Buscar
-                                </button>
-                                <a href="listar_expedientes.php" class="btn btn-outline-secondary">
+                                <a href="listar_expedientes.php" class="btn btn-outline-secondary px-4">
                                     <i class="bi bi-x-circle"></i> Limpiar filtros
                                 </a>
+                                <button type="submit" class="btn btn-primary px-4">
+                                    <i class="bi bi-search"></i> Buscar
+                                </button>
+                                
                             </div>
                         </form>
                     </div>
@@ -235,7 +246,7 @@ try {
                                                 <i class="bi bi-arrow-left-right"></i>
                                             </a>
                                             <button class="btn btn-sm btn-outline-danger"
-                                                    onclick="confirmarBorrado(<?= $exp['id'] ?>, '<?= htmlspecialchars($exp['numero']) ?>', '<?= htmlspecialchars($exp['letra']) ?>', '<?= htmlspecialchars($exp['anio']) ?>')"
+                                                    onclick="confirmarBorrado(<?= $exp['id'] ?>, '<?= htmlspecialchars($exp['numero']) ?>', '<?= htmlspecialchars($exp['letra']) ?>','<?= htmlspecialchars($exp['folio']) ?>', '<?= htmlspecialchars($exp['libro']) ?>', '<?= htmlspecialchars($exp['anio']) ?>')"
                                                     title="Eliminar">
                                                 <i class="bi bi-trash"></i>
                                             </button>
@@ -370,10 +381,10 @@ $query_string = $query_string ? '&' . $query_string : '';
         }
     }
 
-    function confirmarBorrado(id, numero, letra, anio) {
+    function confirmarBorrado(id, numero, letra, folio, libro, anio) {
         Swal.fire({
             title: '¿Eliminar expediente?',
-            html: `¿Está seguro que desea eliminar el expediente <br><strong>${numero}/${letra}/${anio}</strong>?<br>Esta acción no se puede deshacer.`,
+            html: `¿Está seguro que desea eliminar el expediente <br><strong>${numero}/${letra}/${folio}/${libro}/${anio}</strong>?<br>Esta acción no se puede deshacer.`,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#dc3545',

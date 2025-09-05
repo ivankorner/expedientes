@@ -7,20 +7,21 @@ define('MAX_EXTRACTO', 300);
 error_log('ID recibido: ' . print_r($_GET, true));
 
 // Validar que el ID exista y sea un número
+// Esta página requiere un parámetro ?id=X en la URL
 $id = filter_var($_GET['id'] ?? null, FILTER_VALIDATE_INT);
 
 if (!$id) {
-    $_SESSION['mensaje'] = "ID de expediente inválido o no proporcionado";
-    $_SESSION['tipo_mensaje'] = "danger";
+    // Redireccionar sin mensaje de error para evitar confusión
     header("Location: listar_expedientes.php");
     exit;
 }
 
 try {
+   // Conectar a la base de datos
     $db = new PDO(
-        "mysql:host=localhost;dbname=expedientes;charset=utf8mb4",
-        "root",
-        "",
+        "mysql:host=localhost;dbname=c2810161_iniciad;charset=utf8mb4",
+        "c2810161_iniciad",
+        "li62veMAdu",
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
     );
 
@@ -66,9 +67,9 @@ try {
 
     // Consultar iniciadores
     $db_iniciadores = new PDO(
-        "mysql:host=localhost;dbname=Iniciadores;charset=utf8mb4",
-        "root",
-        "",
+        "mysql:host=localhost;dbname=c2810161_iniciad;charset=utf8mb4",
+        "c2810161_iniciad",
+        "li62veMAdu",
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
     );
     $stmt = $db_iniciadores->query("SELECT id, CONCAT(apellido, ', ', nombre, ' (', dni, ')') as nombre_completo FROM persona_fisica ORDER BY apellido, nombre");
@@ -97,7 +98,7 @@ try {
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
-    <link rel="stylesheet" href="/expedientes/publico/css/estilos.css">
+    <link rel="stylesheet" href="/publico/css/estilos.css">
     <style>
 .historial-modal .swal2-html-container {
     margin: 1em 0;
@@ -135,7 +136,7 @@ input[readonly] {
     <nav class="navbar navbar-expand-lg header-dashboard shadow-sm py-3">
         <div class="container-fluid d-flex align-items-center justify-content-between px-0">
             <div class="d-flex align-items-center">
-                <img src="/expedientes/publico/imagen/LOGOCDE.png" alt="Logo" class="logo-header me-3" style="height:76px;">
+                <img src="/publico/imagen/LOGOCDE.png" alt="Logo" class="logo-header me-3" style="height:76px;">
                 <span class="fs-4 fw-bold titulo-header">Expedientes</span>
             </div>
             <div class="d-flex align-items-center">
@@ -158,7 +159,7 @@ input[readonly] {
                 <div class="main-box carga">
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h1 class="titulo-principal text-center">Actualizar Expediente</h1>
-                        <a href="listar_expedientes.php" class="btn btn-primary">
+                        <a href="listar_expedientes.php" class="btn btn-primary px-4">
                             <i class="bi bi-list-ul"></i> Listar Expedientes
                         </a>
                     </div>
@@ -297,16 +298,19 @@ input[readonly] {
 
                         <div class="d-flex justify-content-between mt-4">
                             <div>
-                                <button type="submit" class="btn btn-primary me-2">
-                                    <i class="bi bi-save"></i> Guardar Cambios
-                                </button>
-                               <!--  <button type="button" class="btn btn-info text-white" onclick="verHistorial(<?= $expediente['id'] ?>)">
-                                    <i class="bi bi-clock-history"></i> Ver Historial
-                                </button>-->
-                            </div>
-                            <a href="listar_expedientes.php" class="btn btn-secondary">
+                                <a href="listar_expedientes.php" class="btn btn-secondary px-4">
                                 <i class="bi bi-x-circle"></i> Cancelar
                             </a>
+                                
+                               <!-- <button type="button" class="btn btn-info text-white px-4" onclick="verHistorial(<?= $expediente['id'] ?>)">
+                                    <i class="bi bi-clock-history"></i> Ver Historial
+                                </button> -->
+
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary px-4">
+                                    <i class="bi bi-save"></i> Guardar Cambios
+                                </button>
                         </div>
                     </form>
                 </div>

@@ -5,33 +5,14 @@ if (!isset($_SESSION['usuario'])) {
     exit;
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Dashboard | Sistema de Expedientes</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!-- Bootstrap CSS + Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="/expedientes/publico/css/estilos.css?v=3">
-</head>
+    <?php require 'head.php'; ?>
+ 
 <body>
-    <!-- HEADER CON LOGO (NAV) -->
-    <nav class="navbar navbar-expand-lg header-dashboard shadow-sm py-3">
-        <div class="container-fluid d-flex align-items-center justify-content-between px-0">
-            <div class="d-flex align-items-center">
-                <img src="/expedientes/publico/imagen/LOGOCDE.png" alt="Logo" class="logo-header me-3" style="height:76px;">
-                <span class="fs-4 fw-bold titulo-header">Expedientes</span>
-            </div>
-            <div class="d-flex align-items-center">
-                <span class="me-3 text-secondary">Usuario: <strong><?php echo htmlspecialchars($_SESSION['usuario']); ?></strong></span>
-                <a href="logout.php" class="btn btn-outline-light btn-sm">
-                    <i class="bi bi-box-arrow-right"></i> Salir
-                </a>
-            </div>
-        </div>
-    </nav>
+  <?php require 'header.php'; ?>
+
     <div class="container-fluid">
         <div class="row">
 

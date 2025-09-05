@@ -1,7 +1,13 @@
 <?php
 session_start();
 try {
-    $db = new PDO("mysql:host=localhost;dbname=Iniciadores;charset=utf8mb4","root","",[PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+    $db = new 
+    PDO(
+        "mysql:host=localhost;dbname=c2810161_iniciad;charset=utf8mb4",
+        "c2810161_iniciad",
+        "li62veMAdu",
+        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+    );
     $stmt = $db->query("SELECT id, username, nombre, apellido, email, role, fecha_creacion FROM usuarios ORDER BY fecha_creacion DESC");
     $usuarios = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {

@@ -82,7 +82,7 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
                     <i class="bi bi-info-circle"></i> Los campos marcados con <span class="text-danger">*</span> son requeridos
                 </p>
 
-                <form action="resultados_publico.php" method="post" autocomplete="off">
+            <form action="resultados_publico.php" method="post" autocomplete="off">
                     <!-- Campo oculto para CSRF -->
 
 
@@ -94,7 +94,7 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
                                 id="numero"
                                 name="numero"
                                 class="form-control"
-                                placeholder="Ej: 1234"
+                                placeholder="Ej: 132"
                                 pattern="[0-9]{1,6}"
                                 maxlength="6"
                                 title="Solo números, máximo 6 dígitos"
@@ -180,12 +180,13 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 
                     
                     <div class="col-12 d-flex justify-content-end gap-2 mt-3">
-                        <button type="submit" class="btn btn-primary px-4">
-                            <i class="bi bi-search"></i> Buscar
-                        </button>
                         <button type="reset" class="btn btn-outline-secondary px-4">
                             <i class="bi bi-eraser"></i> Limpiar Campos
                         </button>
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="bi bi-search"></i> Buscar
+                        </button>
+                        
                     </div>
             </div>
             </form>

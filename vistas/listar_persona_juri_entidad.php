@@ -1,12 +1,15 @@
 
 <?php
 session_start();
+require 'header.php';
+require 'head.php';
 
 try {
+   // Conectar a la base de datos
     $db = new PDO(
-        "mysql:host=localhost;dbname=Iniciadores;charset=utf8mb4",
-        "root",
-        "",
+        "mysql:host=localhost;dbname=c2810161_iniciad;charset=utf8mb4",
+        "c2810161_iniciad",
+        "li62veMAdu",
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
     );
 
@@ -59,16 +62,9 @@ try {
 
 <!DOCTYPE html>
 <html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Listado de Entidades</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="/expedientes/publico/css/estilos.css">
-</head>
+
 <body>
-    <?php require '../vistas/header.php'; ?>
+    
     
     <div class="container-fluid">
         <div class="row">
@@ -77,7 +73,7 @@ try {
             <main class="col-12 col-md-10 ms-sm-auto px-4">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1>Listado de Entidades</h1>
-                    <a href="carga_persona_juri_entidad.php" class="btn btn-primary">
+                    <a href="carga_persona_juri_entidad.php" class="btn btn-primary px-4">
                         <i class="bi bi-plus-circle"></i> Nueva Entidad
                     </a>
                 </div>
@@ -96,7 +92,7 @@ try {
                         <input type="text" name="buscar" class="form-control" 
                                placeholder="Buscar por razón social, CUIT o representante..."
                                value="<?= htmlspecialchars($buscar) ?>">
-                        <button class="btn btn-outline-secondary" type="submit">
+                        <button class="btn btn-outline-secondary px-4" type="submit">
                             <i class="bi bi-search"></i> Buscar
                         </button>
                     </div>

@@ -1,28 +1,14 @@
+<?php
+session_start();
+require 'header.php';
+require 'head.php';
+?>
+
 <!DOCTYPE html>
 <html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Carga de Iniciador</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!-- Bootstrap CSS + Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="/expedientes/publico/css/estilos.css">
-</head>
+
 <body>
-    <!-- HEADER CON LOGO (igual que dashboard) -->
-    <nav class="navbar navbar-expand-lg header-dashboard shadow-sm py-3">
-        <div class="container-fluid d-flex align-items-center justify-content-between px-0">
-            <div class="d-flex align-items-center">
-                <img src="/expedientes/publico/imagen/LOGOCDE.png" alt="Logo" class="logo-header me-3" style="height:76px;">
-                <span class="fs-4 fw-bold titulo-header">Expedientes</span>
-            </div>
-            <div class="d-flex align-items-center">
-                <span class="me-3 text-secondary">Usuario: <strong>Admin</strong></span>
-                <a href="#" class="btn btn-outline-light btn-sm"><i class="bi bi-box-arrow-right"></i> Salir</a>
-            </div>
-        </div>
-    </nav>
+   
     <div class="container-fluid">
         <div class="row">
            
@@ -182,16 +168,17 @@
 
                         <div class="d-flex justify-content-between mt-4">
                             <div>
-                                <button type="submit" class="btn btn-primary me-2">
-                                    <i class="bi bi-save"></i> Guardar
-                                </button>
-                                <a href="listar_persona_juri_entidad.php" class="btn btn-info text-white">
+                                <button type="reset" class="btn btn-outline-secondary px-4">
+                                <i class="bi bi-eraser"></i> Limpiar
+                            </button>
+                                <a href="listar_persona_juri_entidad.php" class="btn btn-info text-white px-4">
                                     <i class="bi bi-list-ul"></i> Ver Listado
                                 </a>
                             </div>
-                            <button type="reset" class="btn btn-outline-secondary">
-                                <i class="bi bi-eraser"></i> Limpiar
-                            </button>
+                            
+                            <button type="submit" class="btn btn-primary px-4">
+                                    <i class="bi bi-save"></i> Guardar
+                                </button>
                         </div>
                     </form>
                 </div>

@@ -1,46 +1,16 @@
 <?php
 session_start();
+require 'header.php';
+require 'head.php';
 ?>
 <!DOCTYPE html>
 <html lang="es">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Expedientes - Seleccionar Rol</title>
 
-    <!-- CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="/expedientes/publico/css/estilos.css">
-
-    <!-- JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
-</head>
 
 <body class="bg-light">
     <!-- Header -->
-    <nav class="navbar navbar-expand-lg header-dashboard shadow-sm py-3">
-        <div class="container-fluid px-4">
-            <div class="d-flex align-items-center">
-                <img src="/expedientes/publico/imagen/LOGOCDE.png" alt="Logo Concejo Deliberante" class="logo-header me-3"
-                    height="76">
-                <h1 class="fs-4 fw-bold titulo-header mb-0">Sistema de Expedientes</h1>
-            </div>
-
-            <?php if(isset($_SESSION['usuario_nombre'])): ?>
-            <div class="d-flex align-items-center">
-                <span class="me-3 text-secondary">
-                    Usuario: <strong><?= htmlspecialchars($_SESSION['usuario_nombre']) ?></strong>
-                </span>
-                <a href="logout.php" class="btn btn-outline-light btn-sm">
-                    <i class="bi bi-box-arrow-right"></i> Salir
-                </a>
-            </div>
-            <?php endif; ?>
-        </div>
-    </nav>
+    
 
     <div class="container-fluid">
         <div class="row">

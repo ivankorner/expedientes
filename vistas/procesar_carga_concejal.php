@@ -3,11 +3,11 @@
 session_start();
 
 try {
-    // Conectar a la base de datos
+  // Conectar a la base de datos
     $db = new PDO(
-        "mysql:host=localhost;dbname=Iniciadores;charset=utf8mb4",
-        "root",
-        "",
+        "mysql:host=localhost;dbname=c2810161_iniciad;charset=utf8mb4",
+        "c2810161_iniciad",
+        "li62veMAdu",
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
     );
 

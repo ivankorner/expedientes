@@ -1,6 +1,7 @@
 <?php
 session_start();
 
+
 try {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         throw new Exception('Método no permitido');
@@ -12,10 +13,11 @@ try {
     }
 
     // Conectar a la base de datos
+   // Conectar a la base de datos
     $db = new PDO(
-        "mysql:host=localhost;dbname=expedientes;charset=utf8mb4",
-        "root",
-        "",
+        "mysql:host=localhost;dbname=c2810161_iniciad;charset=utf8mb4",
+        "c2810161_iniciad",
+        "li62veMAdu",
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
     );
 
@@ -34,11 +36,11 @@ try {
         $tipo = $matches[1];
         $id_iniciador = (int)$matches[2];
         $db_iniciadores = new PDO(
-            "mysql:host=localhost;dbname=Iniciadores;charset=utf8mb4",
-            "root",
-            "",
-            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-        );
+        "mysql:host=localhost;dbname=c2810161_iniciad;charset=utf8mb4",
+        "c2810161_iniciad",
+        "li62veMAdu",
+        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+    );
         if ($tipo === 'PF') {
             $stmt = $db_iniciadores->prepare("SELECT CONCAT(apellido, ', ', nombre, ' (', dni, ')') as nombre_completo FROM persona_fisica WHERE id = ?");
         } elseif ($tipo === 'PJ') {

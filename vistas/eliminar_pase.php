@@ -11,10 +11,15 @@ if (!$id) {
     exit;
 }
 try {
-    $db = new PDO("mysql:host=localhost;dbname=expedientes;charset=utf8mb4", "root", "", [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+    $db = new PDO("mysql:host=localhost;dbname=c2810161_iniciad;charset=utf8mb4", "c2810161_iniciad", "li62veMAdu", [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
     $stmt = $db->prepare('DELETE FROM historial_lugares WHERE id = ?');
     $stmt->execute([$id]);
     echo json_encode(['success'=>true,'message'=>'Pase eliminado']);
 } catch (Exception $e) {
     echo json_encode(['success'=>false,'message'=>$e->getMessage()]);
 }
+
+
+
+ // Conectar a la base de datos
+    

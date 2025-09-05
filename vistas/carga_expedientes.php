@@ -1,11 +1,14 @@
 <?php
 session_start();
+require 'header.php';
+require 'head.php';
 
 try {
+     // Conectar a la base de datos
     $db = new PDO(
-        "mysql:host=localhost;dbname=Iniciadores;charset=utf8mb4",
-        "root",
-        "",
+        "mysql:host=localhost;dbname=c2810161_iniciad;charset=utf8mb4",
+        "c2810161_iniciad",
+        "li62veMAdu",
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
     );
 
@@ -40,35 +43,10 @@ try {
 <!DOCTYPE html>
 <html lang="es">
 
-<head>
-    <meta charset="UTF-8">
-    <title>Carga de Expediente</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!-- Bootstrap CSS + Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <!-- SweetAlert2 -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
-    <link rel="stylesheet" href="/expedientes/publico/css/estilos.css">
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
-</head>
+
 
 <body>
-    <!-- HEADER CON LOGO (igual que dashboard) -->
-    <nav class="navbar navbar-expand-lg header-dashboard shadow-sm py-3">
-        <div class="container-fluid d-flex align-items-center justify-content-between px-0">
-            <div class="d-flex align-items-center">
-                <img src="/expedientes/publico/imagen/LOGOCDE.png" alt="Logo" class="logo-header me-3" style="height:76px;">
-                <span class="fs-4 fw-bold titulo-header">Expedientes</span>
-            </div>
-            <div class="d-flex align-items-center">
-                <span class="me-3 text-secondary">Usuario: <strong>Admin</strong></span>
-                <a href="#" class="btn btn-outline-light btn-sm"><i class="bi bi-box-arrow-right"></i> Salir</a>
-            </div>
-        </div>
-    </nav>
+   
     <div class="container-fluid">
         <div class="row">
 
@@ -183,16 +161,9 @@ try {
                             <div class="col-md-4 mb-2">
                                 <label for="lugar" class="form-label">Lugar *</label>
                                 <select id="lugar" name="lugar" class="form-select" required>
-                                    <option value="">Seleccione un lugar</option>
+                                    
                                     <option value="Mesa de Entrada">Mesa de Entrada</option>
-                                    <option value="Comision I">Comisión I</option>
-                                    <option value="Comision II">Comisión II</option>
-                                    <option value="Comision III">Comisión III</option>
-                                    <option value="Comision IV">Comisión IV</option>
-                                    <option value="Comision V">Comisión V</option>
-                                    <option value="Comision VI">Comisión VI</option>
-                                    <option value="Comision VII">Comisión VII</option>
-                                    <option value="Archivo">Archivo</option>
+                                    
                                 </select>
                                 <div class="invalid-feedback">Por favor seleccione un lugar</div>
                             </div>
@@ -271,12 +242,13 @@ try {
 
                         <!-- Botones de acción -->
                         <div class="d-flex justify-content-between mt-4">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-save"></i> Guardar
-                            </button>
-                            <button type="reset" class="btn btn-outline-secondary">
+                            <button type="reset" class="btn btn-outline-secondary px-4">
                                 <i class="bi bi-eraser"></i> Limpiar Campos
                             </button>
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="bi bi-save"></i> Guardar
+                            </button>
+                            
                         </div>
                     </form>
                 </div>

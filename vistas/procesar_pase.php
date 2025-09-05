@@ -19,10 +19,12 @@ try {
         throw new Exception('Todos los campos son requeridos');
     }
 
+     // Conectar a la base de datos
+   // Conectar a la base de datos
     $db = new PDO(
-        "mysql:host=localhost;dbname=expedientes;charset=utf8mb4",
-        "root",
-        "",
+        "mysql:host=localhost;dbname=c2810161_iniciad;charset=utf8mb4",
+        "c2810161_iniciad",
+        "li62veMAdu",
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
     );
 
@@ -56,6 +58,13 @@ try {
     // Confirmar transacción
     $db->commit();
 
+    // Verificar si es una petición AJAX
+    if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true, 'message' => 'Pase registrado correctamente']);
+        exit;
+    }
+
     $_SESSION['mensaje'] = "Pase registrado correctamente";
     $_SESSION['tipo_mensaje'] = "success";
 
@@ -63,6 +72,14 @@ try {
     if (isset($db) && $db->inTransaction()) {
         $db->rollBack();
     }
+    
+    // Verificar si es una petición AJAX
+    if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'message' => 'Error al registrar el pase: ' . $e->getMessage()]);
+        exit;
+    }
+    
     $_SESSION['mensaje'] = "Error al registrar el pase: " . $e->getMessage();
     $_SESSION['tipo_mensaje'] = "danger";
 }

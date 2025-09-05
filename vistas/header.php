@@ -1,24 +1,16 @@
-<?php
-// IMPORTANTE: Antes de incluir este archivo, asegurate de definir:
-// $es_admin = isset($_SESSION['usuario_logueado']) && $_SESSION['usuario_logueado'] === true;
-// $usuario_nombre = $_SESSION['usuario_nombre'] ?? 'Usuario';
-?>
-<nav class="navbar navbar-expand-lg header-dashboard shadow-sm py-2 sticky-top">
-    <div class="container align-items-center">
-        <a class="navbar-brand d-flex align-items-center" href="/expedientes/vistas/dashboard.php">
-            <img src="/expedientes/publico/imagen/LOGOCDE.png" alt="Logo Concejo Deliberante" height="56" class="me-2" style="border-radius:8px;">
-            <span class="fw-bold brand-title">Concejo Deliberante</span>
-        </a>
-        <div class="ms-auto d-flex align-items-center gap-3">
-            <?php if ($es_admin): ?>
-                <span class="fw-semibold text-light">Bienvenido, <?= htmlspecialchars($usuario_nombre) ?></span>
-                <a href="/expedientes/vistas/dashboard.php" class="btn btn-outline-light">Dashboard</a>
-                <a href="/expedientes/logout.php" class="btn btn-danger">Cerrar sesión</a>
-            <?php else: ?>
-                <a href="/expedientes/login.php" class="btn btn-outline-light rounded-circle d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;" title="Iniciar sesión">
-                    <i class="bi bi-person-circle fs-4"></i>
+
+<!-- HEADER CON LOGO (NAV) -->
+    <nav class="navbar navbar-expand-lg header-dashboard shadow-sm py-3">
+        <div class="container-fluid d-flex align-items-center justify-content-between px-0">
+            <div class="d-flex align-items-center">
+                <img src="/publico/imagen/LOGOCDE.png" alt="Logo" class="logo-header me-3" style="height:76px;">
+                <span class="fs-4 fw-bold titulo-header">Expedientes</span>
+            </div>
+            <div class="d-flex align-items-center">
+                <span class="me-3 text-secondary">Usuario: <strong><?php echo htmlspecialchars($_SESSION['usuario']); ?></strong></span>
+                <a href="logout.php" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-box-arrow-right"></i> Salir
                 </a>
-            <?php endif; ?>
+            </div>
         </div>
-    </div>
-</nav>
+    </nav>
