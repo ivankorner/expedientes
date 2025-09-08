@@ -20,7 +20,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($user && password_verify($contrasena, $user['password_hash'])) {
         $_SESSION['usuario'] = $user['username'];
         $_SESSION['user_id'] = $user['id'];
-        $_SESSION['role'] = $user['role'];
+        $_SESSION['user_role'] = $user['role']; // Corregido: usar user_role en lugar de role
+        $_SESSION['is_superuser'] = ($user['is_superuser'] ?? 0) == 1;
+        
+        // Registrar el login en logs de seguridad
+        try {
+            $log_stmt = $pdo->prepare('INSERT INTO logs_seguridad (user_id, accion, descripcion, ip_address, fecha) VALUES (?, ?, ?, ?, NOW())');
+            $log_stmt->execute([
+                $user['id'],
+                'LOGIN',
+                'Inicio de sesión exitoso - ' . ($user['is_superuser'] ? 'Super Usuario' : ucfirst($user['role'])),
+                $_SERVER['REMOTE_ADDR'] ?? 'unknown'
+            ]);
+        } catch (Exception $e) {
+            // Si falla el log, no es crítico para el login
+        }
+        
         header('Location: dashboard.php');
         exit;
     } else {

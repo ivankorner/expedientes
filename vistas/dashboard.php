@@ -59,14 +59,60 @@ if (!isset($_SESSION['usuario'])) {
                     </div>
                 </div>
                 <!-- Accesos rápidos -->
-                
                 <div class="row mb-4">
-                    <div class="col-md-12">
+                    <div class="col-md-6">
                         <a href="listar_usuarios.php" class="btn btn-outline-dark btn-lg w-100">
                             <i class="bi bi-people"></i> Administrar usuarios
                         </a>
                     </div>
+                    <?php if (isset($_SESSION['is_superuser']) && $_SESSION['is_superuser']): ?>
+                    <div class="col-md-6">
+                        <a href="cambiar_password_superuser.php" class="btn btn-danger btn-lg w-100">
+                            <i class="bi bi-shield-fill-exclamation"></i> Configuración Super Usuario
+                        </a>
+                    </div>
+                    <?php endif; ?>
                 </div>
+                
+                <?php if (isset($_SESSION['is_superuser']) && $_SESSION['is_superuser']): ?>
+                <!-- Panel especial para Super Usuario -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="alert alert-danger border-danger">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-shield-fill-exclamation text-danger me-3 fs-2"></i>
+                                <div>
+                                    <h5 class="alert-heading mb-1">Acceso de Super Usuario Activo</h5>
+                                    <p class="mb-2">
+                                        Tiene privilegios máximos en el sistema. Use estas herramientas con precaución.
+                                    </p>
+                                    <hr>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <small class="d-block">
+                                                <i class="bi bi-check-circle me-1"></i>
+                                                Control total de usuarios
+                                            </small>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <small class="d-block">
+                                                <i class="bi bi-check-circle me-1"></i>
+                                                Configuración del sistema
+                                            </small>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <small class="d-block">
+                                                <i class="bi bi-check-circle me-1"></i>
+                                                Cambio de contraseña seguro
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
                 <!-- NO HAY FORMULARIO DE CONSULTA ACÁ -->
             </main>
         </div>

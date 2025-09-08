@@ -268,6 +268,16 @@ try {
                                             <label class="form-label required-field">Rol del Usuario</label>
                                             <select name="role" class="form-select" required onchange="updateRoleInfo()">
                                                 <option value="">Seleccionar rol...</option>
+                                                <?php 
+                                                // Solo mostrar el rol superuser si el usuario actual es superuser
+                                                $currentUserRole = $_SESSION['user_role'] ?? '';
+                                                $editingSuperuser = ($user['role'] === 'superuser');
+                                                
+                                                if ($currentUserRole === 'superuser' && !$editingSuperuser): ?>
+                                                    <option value="superuser" <?= ($user['role']==='superuser')? 'selected':'' ?>>
+                                                        Super Administrador
+                                                    </option>
+                                                <?php endif; ?>
                                                 <option value="admin" <?= ($user['role']==='admin')? 'selected':'' ?>>
                                                     Administrador
                                                 </option>
@@ -280,6 +290,12 @@ try {
                                                 <option value="viewer" <?= ($user['role']==='viewer')? 'selected':'' ?>>
                                                     Solo Lectura
                                                 </option>
+                                                <?php if ($editingSuperuser): ?>
+                                                    <option value="superuser" selected disabled>
+                                                        Super Administrador (No modificable)
+                                                    </option>
+                                                    <input type="hidden" name="role" value="superuser">
+                                                <?php endif; ?>
                                             </select>
                                             
                                             <div class="role-info mt-2" id="roleInfo">
@@ -343,6 +359,22 @@ try {
 
                     <!-- Panel lateral con vista previa -->
                     <div class="col-lg-4">
+                        <?php if ($isEdit && isset($user['role']) && $user['role'] === 'superuser'): ?>
+                            <!-- Alerta especial para super usuario -->
+                            <div class="alert alert-warning border-warning mb-3">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-exclamation-triangle-fill text-warning me-2 fs-4"></i>
+                                    <div>
+                                        <h6 class="alert-heading mb-1">Super Usuario</h6>
+                                        <small class="mb-0">
+                                            Este usuario tiene control total del sistema. 
+                                            Solo puede cambiar su contraseña desde dentro del sistema.
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                        
                         <div class="user-preview">
                             <div class="user-avatar-large" id="userAvatar">
                                 <?= !empty($user['nombre']) ? strtoupper(substr($user['nombre'], 0, 1)) : '?' ?>
@@ -446,6 +478,11 @@ try {
             const selectedRole = roleSelect.value;
 
             const roleDescriptions = {
+                'superuser': {
+                    description: 'Control total del sistema - No puede ser modificado por otros usuarios',
+                    icon: 'shield-fill-exclamation',
+                    class: 'text-danger fw-bold'
+                },
                 'admin': {
                     description: 'Acceso completo al sistema, puede gestionar usuarios y configuraciones',
                     icon: 'shield-fill-check',
@@ -516,6 +553,17 @@ try {
                 e.preventDefault();
                 alert('Si cambias la contraseña, debe tener al menos 6 caracteres');
                 return;
+            }
+
+            // Verificar si se está intentando editar un super usuario
+            const roleSelect = this.querySelector('select[name="role"]');
+            const isSuperuser = roleSelect.value === 'superuser' || roleSelect.querySelector('option[value="superuser"]:checked');
+            if (isSuperuser && isEdit) {
+                const confirmed = confirm('⚠️ ADVERTENCIA: Está modificando un Super Usuario.\n\nEste usuario tiene control total del sistema.\n¿Está seguro de continuar?');
+                if (!confirmed) {
+                    e.preventDefault();
+                    return;
+                }
             }
         });
     </script>
