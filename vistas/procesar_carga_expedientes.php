@@ -76,10 +76,10 @@ try {
 
     // Preparar datos
     $data = [
-        'numero' => filter_var($_POST['numero'], FILTER_VALIDATE_INT),
+        'numero' => sanear_input($_POST['numero']),
         'letra' => sanear_input($_POST['letra']),
-        'folio' => filter_var($_POST['folio'], FILTER_VALIDATE_INT),
-        'libro' => filter_var($_POST['libro'], FILTER_VALIDATE_INT),
+        'folio' => sanear_input($_POST['folio']),
+        'libro' => sanear_input($_POST['libro']),
         'anio' => filter_var($_POST['anio'], FILTER_VALIDATE_INT),
         'fecha_hora_ingreso' => sanear_input($_POST['fecha_hora_ingreso']),
         'lugar' => sanear_input($_POST['lugar'] ?? ''),
@@ -87,8 +87,11 @@ try {
         'iniciador' => $nombre_iniciador
     ];
 
-    // Validar datos
-    if (!$data['numero'] || !$data['folio'] || !$data['libro'] || !$data['anio']) {
+    // Validar datos numéricos (permitiendo ceros a la izquierda)
+    if (!preg_match('/^[0-9]{1,6}$/', $data['numero']) || 
+        !preg_match('/^[0-9]{1,6}$/', $data['folio']) || 
+        !preg_match('/^[0-9]{1,6}$/', $data['libro']) || 
+        !$data['anio']) {
         throw new Exception("Datos numéricos inválidos");
     }
 
