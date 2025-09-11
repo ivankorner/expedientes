@@ -35,19 +35,38 @@ try {
         exit;
     }
 
-    // TODO: Verificar si la entidad tiene expedientes asociados
-    // $sql_expedientes = "SELECT COUNT(*) FROM expedientes WHERE iniciador_id = :id";
-    // $stmt_exp = $db->prepare($sql_expedientes);
-    // $stmt_exp->bindParam(':id', $id, PDO::PARAM_INT);
-    // $stmt_exp->execute();
-    // $tiene_expedientes = $stmt_exp->fetchColumn() > 0;
+    // Verificar si la entidad tiene expedientes asociados
+    // La tabla expedientes tiene una columna 'iniciador' con el nombre completo en formato "Razón Social (CUIT)"
+    $nombre_completo_buscar = $entidad['razon_social'];
     
-    // if ($tiene_expedientes) {
-    //     $_SESSION['mensaje'] = "No se puede eliminar la entidad porque tiene expedientes asociados";
-    //     $_SESSION['tipo_mensaje'] = "warning";
-    //     header('Location: listar_persona_juri_entidad.php');
-    //     exit;
-    // }
+    // Obtener datos completos de la entidad para formar el nombre como se almacena en expedientes
+    $sql_entidad_completa = "SELECT razon_social, cuit FROM persona_juri_entidad WHERE id = :id";
+    $stmt_completa = $db->prepare($sql_entidad_completa);
+    $stmt_completa->bindParam(':id', $id, PDO::PARAM_INT);
+    $stmt_completa->execute();
+    $entidad_completa = $stmt_completa->fetch(PDO::FETCH_ASSOC);
+    
+    if ($entidad_completa) {
+        // Formar el nombre como se almacena en expedientes
+        if (!empty($entidad_completa['cuit'])) {
+            $nombre_en_expedientes = $entidad_completa['razon_social'] . ' (' . $entidad_completa['cuit'] . ')';
+        } else {
+            $nombre_en_expedientes = $entidad_completa['razon_social'];
+        }
+        
+        // Verificar expedientes asociados
+        $sql_expedientes = "SELECT COUNT(*) as total FROM expedientes WHERE iniciador LIKE :iniciador_nombre";
+        $stmt_exp = $db->prepare($sql_expedientes);
+        $stmt_exp->execute([':iniciador_nombre' => '%' . $nombre_en_expedientes . '%']);
+        $expedientes_asociados = $stmt_exp->fetch(PDO::FETCH_ASSOC)['total'];
+        
+        if ($expedientes_asociados > 0) {
+            $_SESSION['mensaje'] = "No se puede eliminar la entidad '{$entidad_completa['razon_social']}' porque tiene {$expedientes_asociados} expediente(s) asociado(s)";
+            $_SESSION['tipo_mensaje'] = "warning";
+            header('Location: listar_persona_juri_entidad.php');
+            exit;
+        }
+    }
 
     // Eliminar la entidad
     $sql_eliminar = "DELETE FROM persona_juri_entidad WHERE id = :id";

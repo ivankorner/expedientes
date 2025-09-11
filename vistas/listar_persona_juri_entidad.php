@@ -40,9 +40,16 @@ try {
     $total = $stmt->fetchColumn();
     $total_paginas = ceil($total / $por_pagina);
 
-    // Obtener registros
-    $sql = "SELECT * FROM persona_juri_entidad $where 
-            ORDER BY razon_social 
+    // Obtener registros con información de expedientes asociados
+    $sql = "SELECT pje.*, 
+            (SELECT COUNT(*) 
+             FROM expedientes e 
+             WHERE e.iniciador LIKE CONCAT('%', pje.razon_social, '%') 
+             AND (pje.cuit IS NULL OR e.iniciador LIKE CONCAT('%', pje.cuit, '%'))
+            ) as expedientes_asociados
+            FROM persona_juri_entidad pje 
+            $where 
+            ORDER BY pje.razon_social 
             LIMIT :offset, :limit";
     
     $stmt = $db->prepare($sql);
@@ -75,7 +82,18 @@ try {
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1>Listado de Entidades</h1>
                     <div>
-                        <a href="carga_persona_juri_entidad.php" class="btn btn-secondary px-4 me-2">
+                        <div class="btn-group me-2">
+                            
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="reparar_tipos_entidad.php">
+                                    <i class="bi bi-wrench"></i> Reparar Tipos Truncados
+                                </a></li>
+                                <li><a class="dropdown-item" href="diagnostico_tabla.php">
+                                    <i class="bi bi-bug"></i> Diagnóstico de Base de Datos
+                                </a></li>
+                            </ul>
+                        </div>
+                        <a href="acciones_iniciadores.php" class="btn btn-secondary px-4 me-2">
                             <i class="bi bi-arrow-left"></i> Volver
                         </a>
                         <a href="carga_persona_juri_entidad.php" class="btn btn-primary px-4">
@@ -112,8 +130,9 @@ try {
                                 <th>Razón Social</th>
                                 <th>CUIT</th>
                                 <th>Tipo</th>
-                                <th>Representante</th>
+                                
                                 <th>Contacto</th>
+                                <th>Expedientes</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
@@ -210,13 +229,23 @@ try {
                                     }
                                     ?>
                                 </td>
-                                <td><?= htmlspecialchars($entidad['rep_nombre'] ?? '-') ?></td>
+                                
                                 <td>
                                     <?php if ($entidad['email']): ?>
                                         <i class="bi bi-envelope"></i> <?= htmlspecialchars($entidad['email']) ?><br>
                                     <?php endif; ?>
                                     <?php if ($entidad['tel_celular']): ?>
                                         <i class="bi bi-phone"></i> <?= htmlspecialchars($entidad['tel_celular']) ?>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <?php if ($entidad['expedientes_asociados'] > 0): ?>
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="bi bi-folder"></i> <?= $entidad['expedientes_asociados'] ?>
+                                        </span>
+                                        <small class="text-muted d-block">expediente(s)</small>
+                                    <?php else: ?>
+                                        <span class="text-muted">Sin expedientes</span>
                                     <?php endif; ?>
                                 </td>
                                 <td>
@@ -229,10 +258,18 @@ try {
                                            class="btn btn-sm btn-outline-primary">
                                             <i class="bi bi-pencil"></i>
                                         </a>
-                                        <button class="btn btn-sm btn-outline-danger" 
-                                                onclick="confirmarEliminar(<?= $entidad['id'] ?>, '<?= htmlspecialchars($entidad['razon_social']) ?>')">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
+                                        <?php if ($entidad['expedientes_asociados'] > 0): ?>
+                                            <button class="btn btn-sm btn-outline-secondary" 
+                                                    disabled
+                                                    title="No se puede eliminar: tiene <?= $entidad['expedientes_asociados'] ?> expediente(s) asociado(s)">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        <?php else: ?>
+                                            <button class="btn btn-sm btn-outline-danger" 
+                                                    onclick="confirmarEliminar(<?= $entidad['id'] ?>, '<?= htmlspecialchars($entidad['razon_social']) ?>')">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        <?php endif; ?>
                                     </div>
                                 </td>
                             </tr>
