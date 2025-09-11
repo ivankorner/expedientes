@@ -61,6 +61,7 @@ try {
         'razon_social' => trim($_POST['razon_social'] ?? ''),
         'cuit' => trim($_POST['cuit'] ?? ''),
         'tipo_entidad' => $tipo_entidad,
+        'otro_tipo' => trim($_POST['otro_tipo'] ?? ''),
         'personeria' => trim($_POST['personeria'] ?? ''),
         'domicilio' => trim($_POST['domicilio'] ?? ''),
         'localidad' => trim($_POST['localidad'] ?? ''),

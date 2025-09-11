@@ -109,6 +109,14 @@ require 'head.php';
                                         </select>
                                     </div>
                                     
+                                    <!-- Campo adicional para especificar "Otro" -->
+                                    <div class="mb-3" id="otro-tipo-container" style="display: none;">
+                                        <label for="otro_tipo" class="form-label">Especificar otro tipo</label>
+                                        <input type="text" class="form-control" id="otro_tipo" name="otro_tipo" 
+                                               placeholder="Ingrese el tipo de entidad"
+                                               value="<?= htmlspecialchars($form_data['otro_tipo'] ?? '') ?>">
+                                    </div>
+                                    
                                     <div class="mb-3">
                                         <label for="web" class="form-label">Página Web</label>
                                         <input type="url" class="form-control" id="web" name="web" 
@@ -310,6 +318,30 @@ require 'head.php';
                 });
             });
         })();
+
+        // Mostrar/ocultar campo "otro tipo" cuando se selecciona "Otro"
+        document.getElementById('tipo_entidad').addEventListener('change', function() {
+            const otroContainer = document.getElementById('otro-tipo-container');
+            const otroInput = document.getElementById('otro_tipo');
+            
+            if (this.value === 'OT') {
+                otroContainer.style.display = 'block';
+                otroInput.required = true;
+            } else {
+                otroContainer.style.display = 'none';
+                otroInput.required = false;
+                otroInput.value = '';
+            }
+        });
+
+        // Verificar al cargar la página si ya está seleccionado "Otro"
+        document.addEventListener('DOMContentLoaded', function() {
+            const tipoSelect = document.getElementById('tipo_entidad');
+            if (tipoSelect.value === 'OT') {
+                document.getElementById('otro-tipo-container').style.display = 'block';
+                document.getElementById('otro_tipo').required = true;
+            }
+        });
 
         // Verificar si hay mensaje en la sesión para mostrar con SweetAlert
         <?php if (isset($_SESSION['mensaje'])): ?>

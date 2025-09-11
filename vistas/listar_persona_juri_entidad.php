@@ -158,7 +158,12 @@ try {
                                         'PA' => 'Parroquia',
                                         'OT' => 'Otro'
                                     ];
-                                    echo htmlspecialchars($tipos[$entidad['tipo_entidad']] ?? $entidad['tipo_entidad'] ?? '-');
+                                    
+                                    if ($entidad['tipo_entidad'] === 'OT' && !empty($entidad['otro_tipo'])) {
+                                        echo htmlspecialchars($entidad['otro_tipo']);
+                                    } else {
+                                        echo htmlspecialchars($tipos[$entidad['tipo_entidad']] ?? $entidad['tipo_entidad'] ?? '-');
+                                    }
                                     ?>
                                 </td>
                                 <td><?= htmlspecialchars($entidad['rep_nombre'] ?? '-') ?></td>
@@ -287,7 +292,11 @@ try {
                                 <p><strong>Razón Social:</strong><br>${entidad.razon_social || 'No especificada'}</p>
                                 <p><strong>CUIT:</strong> ${entidad.cuit || 'No especificado'}</p>
                                 <p><strong>Personería Jurídica:</strong> ${entidad.personeria || 'No especificada'}</p>
-                                <p><strong>Tipo de Entidad:</strong> ${tiposEntidad[entidad.tipo_entidad] || entidad.tipo_entidad || 'No especificado'}</p>
+                                <p><strong>Tipo de Entidad:</strong> ${
+                                    entidad.tipo_entidad === 'OT' && entidad.otro_tipo 
+                                        ? entidad.otro_tipo 
+                                        : (tiposEntidad[entidad.tipo_entidad] || entidad.tipo_entidad || 'No especificado')
+                                }</p>
                                 <p><strong>Página Web:</strong> ${entidad.web ? `<a href="${entidad.web}" target="_blank">${entidad.web}</a>` : 'No especificada'}</p>
                             </div>
                             <div class="col-md-6">
