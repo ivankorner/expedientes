@@ -33,7 +33,7 @@ require 'head.php';
                 ?>
 
                 <!-- Formulario de creación -->
-                <form action="procesar_carga_concejal.php" method="POST" class="needs-validation" novalidate>
+                <form action="procesar_carga_concejal_corregido.php" method="POST" class="needs-validation" novalidate>
                     <div class="row">
                         <!-- Datos personales -->
                         <div class="col-md-6">

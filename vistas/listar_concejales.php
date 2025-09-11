@@ -77,12 +77,7 @@ try {
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1>Listado de Concejales</h1>
                     <div>
-                        <a href="corrector_relaciones.php" class="btn btn-warning px-4 me-2">
-                            <i class="bi bi-tools"></i> Corregir Relaciones
-                        </a>
-                        <a href="verificar_estructura_tablas.php" class="btn btn-info px-4 me-2">
-                            <i class="bi bi-search"></i> Verificar Estructura
-                        </a>
+                       
                         <a href="carga_concejal.php" class="btn btn-primary px-4">
                             <i class="bi bi-plus-circle"></i> Nuevo Concejal
                         </a>

@@ -80,9 +80,7 @@ try {
                     <h1>Listado de Iniciadores</h1>
                     <div>
                         <div class="btn-group me-2">
-                            <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
-                                <i class="bi bi-tools"></i> Herramientas
-                            </button>
+                            
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" href="verificar_proteccion_eliminacion.php">
                                     <i class="bi bi-shield-check"></i> Verificar Protecciones
