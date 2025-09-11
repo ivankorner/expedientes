@@ -69,10 +69,14 @@ try {
     // Preparar datos para actualizar
     $tipo_entidad = $_POST['tipo_entidad'] ?? '';
     
-    // Validar y truncar tipo_entidad si es necesario
+    // Validar tipo_entidad sin truncar (soporta códigos de hasta 10 caracteres)
     if ($tipo_entidad) {
-        // Truncar a 2 caracteres (límite original de la base de datos)
-        $tipo_entidad = strtoupper(substr(trim($tipo_entidad), 0, 2));
+        $tipo_entidad = strtoupper(trim($tipo_entidad));
+        
+        // Validar longitud máxima (VARCHAR(10))
+        if (strlen($tipo_entidad) > 10) {
+            throw new Exception("El código de tipo de entidad no puede exceder 10 caracteres");
+        }
         
         // Si está vacío después del trim, establecer como cadena vacía
         if (empty($tipo_entidad)) {

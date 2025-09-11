@@ -131,6 +131,11 @@ try {
                                         'SC' => 'Sociedad Colectiva',
                                         'CS' => 'Sociedad en Comandita Simple',
                                         'CP' => 'Sociedad en Comandita por Acciones',
+                                        'SE' => 'Sociedad del Estado',
+                                        'SP' => 'Sociedad Anónima con Participación Estatal Mayoritaria (SAPEM)',
+                                        'EU' => 'Empresa Unipersonal',
+                                        'MO' => 'Monotributista / Autónomo',
+                                        
                                         'AC' => 'Asociación Civil',
                                         'FU' => 'Fundación',
                                         'CO' => 'Cooperativa',
@@ -142,20 +147,59 @@ try {
                                         'AI' => 'Agrupación de Interés Económico',
                                         'EN' => 'Entidad sin Fines de Lucro',
                                         'ON' => 'Organización No Gubernamental',
+                                        'COOPR' => 'Consorcio de Copropietarios',
+                                        
+                                        'MIN' => 'Ministerio',
+                                        'SEC' => 'Secretaría',
+                                        'MUN' => 'Municipalidad',
+                                        'COM' => 'Comisión Municipal',
+                                        'CD' => 'Concejo Deliberante',
+                                        'OD' => 'Organismo Descentralizado / Ente Autárquico',
+                                        'EP' => 'Empresa Pública',
+                                        
                                         'CL' => 'Club Deportivo',
+                                        'ADE' => 'Asociación Deportiva',
+                                        'FDE' => 'Federación Deportiva',
+                                        'LDE' => 'Liga Deportiva / Liga Barrial',
+                                        'ACD' => 'Asociación de Clubes',
+                                        
                                         'CC' => 'Cámara de Comercio',
                                         'CI' => 'Colegio de Ingenieros',
                                         'CM' => 'Colegio de Médicos',
                                         'CA' => 'Colegio de Abogados',
+                                        
                                         'IN' => 'Instituto',
                                         'UN' => 'Universidad',
                                         'ES' => 'Escuela',
+                                        'JI' => 'Jardín de Infantes',
+                                        'ET' => 'Escuela Técnica',
                                         'CE' => 'Centro Educativo',
+                                        'ITS' => 'Instituto Terciario / Superior',
+                                        'CEI' => 'Centro de Investigación',
+                                        'ACA' => 'Academia',
+                                        'CES' => 'Consejo Escolar',
+                                        
                                         'HO' => 'Hospital',
                                         'SN' => 'Sanatorio',
+                                        'CLN' => 'Clínica',
                                         'CX' => 'Centro de Salud',
+                                        'CCOM' => 'Centro Comunitario',
+                                        'CREH' => 'Centro de Rehabilitación',
+                                        'RGA' => 'Residencia Geriátrica / Hogar de Ancianos',
+                                        'CCO' => 'Comedor Comunitario',
+                                        
                                         'IG' => 'Iglesia',
                                         'PA' => 'Parroquia',
+                                        'TEM' => 'Templo',
+                                        'CAP' => 'Capilla',
+                                        'HER' => 'Hermandad / Cofradía',
+                                        
+                                        'BP' => 'Biblioteca Popular',
+                                        'CCU' => 'Centro Cultural',
+                                        'TEI' => 'Teatro Independiente',
+                                        'AVE' => 'Asociación Vecinal / Centro Vecinal',
+                                        'SF' => 'Sociedad de Fomento',
+                                        
                                         'OT' => 'Otro'
                                     ];
                                     
@@ -240,6 +284,11 @@ try {
                         'SC': 'Sociedad Colectiva',
                         'CS': 'Sociedad en Comandita Simple',
                         'CP': 'Sociedad en Comandita por Acciones',
+                        'SE': 'Sociedad del Estado',
+                        'SP': 'Sociedad Anónima con Participación Estatal Mayoritaria (SAPEM)',
+                        'EU': 'Empresa Unipersonal',
+                        'MO': 'Monotributista / Autónomo',
+                        
                         'AC': 'Asociación Civil',
                         'FU': 'Fundación',
                         'CO': 'Cooperativa',
@@ -251,20 +300,59 @@ try {
                         'AI': 'Agrupación de Interés Económico',
                         'EN': 'Entidad sin Fines de Lucro',
                         'ON': 'Organización No Gubernamental',
+                        'COOPR': 'Consorcio de Copropietarios',
+                        
+                        'MIN': 'Ministerio',
+                        'SEC': 'Secretaría',
+                        'MUN': 'Municipalidad',
+                        'COM': 'Comisión Municipal',
+                        'CD': 'Concejo Deliberante',
+                        'OD': 'Organismo Descentralizado / Ente Autárquico',
+                        'EP': 'Empresa Pública',
+                        
                         'CL': 'Club Deportivo',
+                        'ADE': 'Asociación Deportiva',
+                        'FDE': 'Federación Deportiva',
+                        'LDE': 'Liga Deportiva / Liga Barrial',
+                        'ACD': 'Asociación de Clubes',
+                        
                         'CC': 'Cámara de Comercio',
                         'CI': 'Colegio de Ingenieros',
                         'CM': 'Colegio de Médicos',
                         'CA': 'Colegio de Abogados',
+                        
                         'IN': 'Instituto',
                         'UN': 'Universidad',
                         'ES': 'Escuela',
+                        'JI': 'Jardín de Infantes',
+                        'ET': 'Escuela Técnica',
                         'CE': 'Centro Educativo',
+                        'ITS': 'Instituto Terciario / Superior',
+                        'CEI': 'Centro de Investigación',
+                        'ACA': 'Academia',
+                        'CES': 'Consejo Escolar',
+                        
                         'HO': 'Hospital',
                         'SN': 'Sanatorio',
+                        'CLN': 'Clínica',
                         'CX': 'Centro de Salud',
+                        'CCOM': 'Centro Comunitario',
+                        'CREH': 'Centro de Rehabilitación',
+                        'RGA': 'Residencia Geriátrica / Hogar de Ancianos',
+                        'CCO': 'Comedor Comunitario',
+                        
                         'IG': 'Iglesia',
                         'PA': 'Parroquia',
+                        'TEM': 'Templo',
+                        'CAP': 'Capilla',
+                        'HER': 'Hermandad / Cofradía',
+                        
+                        'BP': 'Biblioteca Popular',
+                        'CCU': 'Centro Cultural',
+                        'TEI': 'Teatro Independiente',
+                        'AVE': 'Asociación Vecinal / Centro Vecinal',
+                        'SF': 'Sociedad de Fomento',
+                        
                         'OT': 'Otro'
                     };
                     

@@ -80,6 +80,11 @@ require 'head.php';
                                             <option value="SC" <?= ($form_data['tipo_entidad'] ?? '') === 'SC' ? 'selected' : '' ?>>Sociedad Colectiva</option>
                                             <option value="CS" <?= ($form_data['tipo_entidad'] ?? '') === 'CS' ? 'selected' : '' ?>>Sociedad en Comandita Simple</option>
                                             <option value="CP" <?= ($form_data['tipo_entidad'] ?? '') === 'CP' ? 'selected' : '' ?>>Sociedad en Comandita por Acciones</option>
+                                            <option value="SE" <?= ($form_data['tipo_entidad'] ?? '') === 'SE' ? 'selected' : '' ?>>Sociedad del Estado</option>
+                                            <option value="SP" <?= ($form_data['tipo_entidad'] ?? '') === 'SP' ? 'selected' : '' ?>>Sociedad Anónima con Participación Estatal Mayoritaria (SAPEM)</option>
+                                            <option value="EU" <?= ($form_data['tipo_entidad'] ?? '') === 'EU' ? 'selected' : '' ?>>Empresa Unipersonal</option>
+                                            <option value="MO" <?= ($form_data['tipo_entidad'] ?? '') === 'MO' ? 'selected' : '' ?>>Monotributista / Autónomo</option>
+                                            
                                             <option value="AC" <?= ($form_data['tipo_entidad'] ?? '') === 'AC' ? 'selected' : '' ?>>Asociación Civil</option>
                                             <option value="FU" <?= ($form_data['tipo_entidad'] ?? '') === 'FU' ? 'selected' : '' ?>>Fundación</option>
                                             <option value="CO" <?= ($form_data['tipo_entidad'] ?? '') === 'CO' ? 'selected' : '' ?>>Cooperativa</option>
@@ -91,20 +96,59 @@ require 'head.php';
                                             <option value="AI" <?= ($form_data['tipo_entidad'] ?? '') === 'AI' ? 'selected' : '' ?>>Agrupación de Interés Económico</option>
                                             <option value="EN" <?= ($form_data['tipo_entidad'] ?? '') === 'EN' ? 'selected' : '' ?>>Entidad sin Fines de Lucro</option>
                                             <option value="ON" <?= ($form_data['tipo_entidad'] ?? '') === 'ON' ? 'selected' : '' ?>>Organización No Gubernamental</option>
+                                            <option value="COOPR" <?= ($form_data['tipo_entidad'] ?? '') === 'COOPR' ? 'selected' : '' ?>>Consorcio de Copropietarios</option>
+                                            
+                                            <option value="MIN" <?= ($form_data['tipo_entidad'] ?? '') === 'MIN' ? 'selected' : '' ?>>Ministerio</option>
+                                            <option value="SEC" <?= ($form_data['tipo_entidad'] ?? '') === 'SEC' ? 'selected' : '' ?>>Secretaría</option>
+                                            <option value="MUN" <?= ($form_data['tipo_entidad'] ?? '') === 'MUN' ? 'selected' : '' ?>>Municipalidad</option>
+                                            <option value="COM" <?= ($form_data['tipo_entidad'] ?? '') === 'COM' ? 'selected' : '' ?>>Comisión Municipal</option>
+                                            <option value="CD" <?= ($form_data['tipo_entidad'] ?? '') === 'CD' ? 'selected' : '' ?>>Concejo Deliberante</option>
+                                            <option value="OD" <?= ($form_data['tipo_entidad'] ?? '') === 'OD' ? 'selected' : '' ?>>Organismo Descentralizado / Ente Autárquico</option>
+                                            <option value="EP" <?= ($form_data['tipo_entidad'] ?? '') === 'EP' ? 'selected' : '' ?>>Empresa Pública</option>
+                                            
                                             <option value="CL" <?= ($form_data['tipo_entidad'] ?? '') === 'CL' ? 'selected' : '' ?>>Club Deportivo</option>
+                                            <option value="ADE" <?= ($form_data['tipo_entidad'] ?? '') === 'ADE' ? 'selected' : '' ?>>Asociación Deportiva</option>
+                                            <option value="FDE" <?= ($form_data['tipo_entidad'] ?? '') === 'FDE' ? 'selected' : '' ?>>Federación Deportiva</option>
+                                            <option value="LDE" <?= ($form_data['tipo_entidad'] ?? '') === 'LDE' ? 'selected' : '' ?>>Liga Deportiva / Liga Barrial</option>
+                                            <option value="ACD" <?= ($form_data['tipo_entidad'] ?? '') === 'ACD' ? 'selected' : '' ?>>Asociación de Clubes</option>
+                                            
                                             <option value="CC" <?= ($form_data['tipo_entidad'] ?? '') === 'CC' ? 'selected' : '' ?>>Cámara de Comercio</option>
                                             <option value="CI" <?= ($form_data['tipo_entidad'] ?? '') === 'CI' ? 'selected' : '' ?>>Colegio de Ingenieros</option>
                                             <option value="CM" <?= ($form_data['tipo_entidad'] ?? '') === 'CM' ? 'selected' : '' ?>>Colegio de Médicos</option>
                                             <option value="CA" <?= ($form_data['tipo_entidad'] ?? '') === 'CA' ? 'selected' : '' ?>>Colegio de Abogados</option>
+                                            
                                             <option value="IN" <?= ($form_data['tipo_entidad'] ?? '') === 'IN' ? 'selected' : '' ?>>Instituto</option>
                                             <option value="UN" <?= ($form_data['tipo_entidad'] ?? '') === 'UN' ? 'selected' : '' ?>>Universidad</option>
                                             <option value="ES" <?= ($form_data['tipo_entidad'] ?? '') === 'ES' ? 'selected' : '' ?>>Escuela</option>
+                                            <option value="JI" <?= ($form_data['tipo_entidad'] ?? '') === 'JI' ? 'selected' : '' ?>>Jardín de Infantes</option>
+                                            <option value="ET" <?= ($form_data['tipo_entidad'] ?? '') === 'ET' ? 'selected' : '' ?>>Escuela Técnica</option>
                                             <option value="CE" <?= ($form_data['tipo_entidad'] ?? '') === 'CE' ? 'selected' : '' ?>>Centro Educativo</option>
+                                            <option value="ITS" <?= ($form_data['tipo_entidad'] ?? '') === 'ITS' ? 'selected' : '' ?>>Instituto Terciario / Superior</option>
+                                            <option value="CEI" <?= ($form_data['tipo_entidad'] ?? '') === 'CEI' ? 'selected' : '' ?>>Centro de Investigación</option>
+                                            <option value="ACA" <?= ($form_data['tipo_entidad'] ?? '') === 'ACA' ? 'selected' : '' ?>>Academia</option>
+                                            <option value="CES" <?= ($form_data['tipo_entidad'] ?? '') === 'CES' ? 'selected' : '' ?>>Consejo Escolar</option>
+                                            
                                             <option value="HO" <?= ($form_data['tipo_entidad'] ?? '') === 'HO' ? 'selected' : '' ?>>Hospital</option>
                                             <option value="SN" <?= ($form_data['tipo_entidad'] ?? '') === 'SN' ? 'selected' : '' ?>>Sanatorio</option>
+                                            <option value="CLN" <?= ($form_data['tipo_entidad'] ?? '') === 'CLN' ? 'selected' : '' ?>>Clínica</option>
                                             <option value="CX" <?= ($form_data['tipo_entidad'] ?? '') === 'CX' ? 'selected' : '' ?>>Centro de Salud</option>
+                                            <option value="CCOM" <?= ($form_data['tipo_entidad'] ?? '') === 'CCOM' ? 'selected' : '' ?>>Centro Comunitario</option>
+                                            <option value="CREH" <?= ($form_data['tipo_entidad'] ?? '') === 'CREH' ? 'selected' : '' ?>>Centro de Rehabilitación</option>
+                                            <option value="RGA" <?= ($form_data['tipo_entidad'] ?? '') === 'RGA' ? 'selected' : '' ?>>Residencia Geriátrica / Hogar de Ancianos</option>
+                                            <option value="CCO" <?= ($form_data['tipo_entidad'] ?? '') === 'CCO' ? 'selected' : '' ?>>Comedor Comunitario</option>
+                                            
                                             <option value="IG" <?= ($form_data['tipo_entidad'] ?? '') === 'IG' ? 'selected' : '' ?>>Iglesia</option>
                                             <option value="PA" <?= ($form_data['tipo_entidad'] ?? '') === 'PA' ? 'selected' : '' ?>>Parroquia</option>
+                                            <option value="TEM" <?= ($form_data['tipo_entidad'] ?? '') === 'TEM' ? 'selected' : '' ?>>Templo</option>
+                                            <option value="CAP" <?= ($form_data['tipo_entidad'] ?? '') === 'CAP' ? 'selected' : '' ?>>Capilla</option>
+                                            <option value="HER" <?= ($form_data['tipo_entidad'] ?? '') === 'HER' ? 'selected' : '' ?>>Hermandad / Cofradía</option>
+                                            
+                                            <option value="BP" <?= ($form_data['tipo_entidad'] ?? '') === 'BP' ? 'selected' : '' ?>>Biblioteca Popular</option>
+                                            <option value="CCU" <?= ($form_data['tipo_entidad'] ?? '') === 'CCU' ? 'selected' : '' ?>>Centro Cultural</option>
+                                            <option value="TEI" <?= ($form_data['tipo_entidad'] ?? '') === 'TEI' ? 'selected' : '' ?>>Teatro Independiente</option>
+                                            <option value="AVE" <?= ($form_data['tipo_entidad'] ?? '') === 'AVE' ? 'selected' : '' ?>>Asociación Vecinal / Centro Vecinal</option>
+                                            <option value="SF" <?= ($form_data['tipo_entidad'] ?? '') === 'SF' ? 'selected' : '' ?>>Sociedad de Fomento</option>
+                                            
                                             <option value="OT" <?= ($form_data['tipo_entidad'] ?? '') === 'OT' ? 'selected' : '' ?>>Otro</option>
                                         </select>
                                     </div>
