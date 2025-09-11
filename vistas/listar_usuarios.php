@@ -108,6 +108,9 @@ try {
                                 <p class="mb-0 opacity-75">Gestiona los usuarios del sistema de expedientes</p>
                             </div>
                             <div class="col-md-6 text-md-end">
+                                <a href="gestionar_permisos_usuario.php" class="btn btn-success me-2">
+                                    <i class="bi bi-shield-check me-2"></i>Gestionar Permisos
+                                </a>
                                 <a href="crear_usuario.php" class="btn btn-light btn-lg">
                                     <i class="bi bi-person-plus me-2"></i>Nuevo Usuario
                                 </a>
@@ -207,12 +210,33 @@ try {
                                             </td>
                                             <td class="py-3">
                                                 <?php
-                                                $roleBadgeClass = $usuario['role'] === 'admin' ? 'bg-danger' : 'bg-primary';
-                                                $roleIcon = $usuario['role'] === 'admin' ? 'shield-fill-check' : 'person-fill';
+                                                $roleBadgeClass = 'bg-primary';
+                                                $roleIcon = 'person-fill';
+                                                
+                                                // Determinar el color y icono según el rol
+                                                if (isset($usuario['is_superuser']) && $usuario['is_superuser']) {
+                                                    $roleBadgeClass = 'bg-danger';
+                                                    $roleIcon = 'shield-fill-exclamation';
+                                                    $roleText = 'Super Usuario';
+                                                } elseif ($usuario['role'] === 'admin') {
+                                                    $roleBadgeClass = 'bg-danger';
+                                                    $roleIcon = 'shield-fill-check';
+                                                    $roleText = 'Administrador';
+                                                } elseif ($usuario['role'] === 'editor') {
+                                                    $roleBadgeClass = 'bg-warning';
+                                                    $roleIcon = 'pencil-fill';
+                                                    $roleText = 'Editor';
+                                                } elseif ($usuario['role'] === 'viewer') {
+                                                    $roleBadgeClass = 'bg-info';
+                                                    $roleIcon = 'eye-fill';
+                                                    $roleText = 'Solo Lectura';
+                                                } else {
+                                                    $roleText = ucfirst($usuario['role']);
+                                                }
                                                 ?>
                                                 <span class="role-badge badge <?= $roleBadgeClass ?>">
                                                     <i class="bi bi-<?= $roleIcon ?> me-1"></i>
-                                                    <?= ucfirst(e($usuario['role'])) ?>
+                                                    <?= $roleText ?>
                                                 </span>
                                             </td>
                                             <td class="py-3">
@@ -227,6 +251,15 @@ try {
                                                    title="Editar usuario">
                                                     <i class="bi bi-pencil"></i>
                                                 </a>
+                                                
+                                                <?php if (!isset($usuario['is_superuser']) || !$usuario['is_superuser']): ?>
+                                                    <a href="gestionar_permisos_usuario.php?user_id=<?= $usuario['id'] ?>" 
+                                                       class="btn btn-outline-success btn-action" 
+                                                       title="Gestionar permisos">
+                                                        <i class="bi bi-shield-check"></i>
+                                                    </a>
+                                                <?php endif; ?>
+                                                
                                                 <a href="eliminar_usuario.php?id=<?= $usuario['id'] ?>" 
                                                    class="btn btn-outline-danger btn-action" 
                                                    title="Eliminar usuario"

@@ -71,11 +71,17 @@ try {
             <?php require '../vistas/sidebar.php'; ?>
             
             <main class="col-12 col-md-10 ms-sm-auto px-4">
+                
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1>Listado de Entidades</h1>
-                    <a href="carga_persona_juri_entidad.php" class="btn btn-primary px-4">
-                        <i class="bi bi-plus-circle"></i> Nueva Entidad
-                    </a>
+                    <div>
+                        <a href="carga_persona_juri_entidad.php" class="btn btn-secondary px-4 me-2">
+                            <i class="bi bi-arrow-left"></i> Volver
+                        </a>
+                        <a href="carga_persona_juri_entidad.php" class="btn btn-primary px-4">
+                            <i class="bi bi-plus-circle"></i> Nueva Entidad
+                        </a>
+                    </div>
                 </div>
 
                 <?php if (isset($_SESSION['mensaje'])): ?>
@@ -120,12 +126,39 @@ try {
                                     <?php
                                     $tipos = [
                                         'SA' => 'Sociedad Anónima',
+                                        'SR' => 'Sociedad de Responsabilidad Limitada',
+                                        'AS' => 'Sociedad por Acciones Simplificada',
+                                        'SC' => 'Sociedad Colectiva',
+                                        'CS' => 'Sociedad en Comandita Simple',
+                                        'CP' => 'Sociedad en Comandita por Acciones',
                                         'AC' => 'Asociación Civil',
                                         'FU' => 'Fundación',
                                         'CO' => 'Cooperativa',
-                                        'OT' => 'Otra'
+                                        'MU' => 'Mutual',
+                                        'SI' => 'Sindicato',
+                                        'FE' => 'Federación',
+                                        'CF' => 'Confederación',
+                                        'UT' => 'Unión Transitoria de Empresas',
+                                        'AI' => 'Agrupación de Interés Económico',
+                                        'EN' => 'Entidad sin Fines de Lucro',
+                                        'ON' => 'Organización No Gubernamental',
+                                        'CL' => 'Club Deportivo',
+                                        'CC' => 'Cámara de Comercio',
+                                        'CI' => 'Colegio de Ingenieros',
+                                        'CM' => 'Colegio de Médicos',
+                                        'CA' => 'Colegio de Abogados',
+                                        'IN' => 'Instituto',
+                                        'UN' => 'Universidad',
+                                        'ES' => 'Escuela',
+                                        'CE' => 'Centro Educativo',
+                                        'HO' => 'Hospital',
+                                        'SN' => 'Sanatorio',
+                                        'CX' => 'Centro de Salud',
+                                        'IG' => 'Iglesia',
+                                        'PA' => 'Parroquia',
+                                        'OT' => 'Otro'
                                     ];
-                                    echo htmlspecialchars($tipos[$entidad['tipo_entidad']] ?? '-');
+                                    echo htmlspecialchars($tipos[$entidad['tipo_entidad']] ?? $entidad['tipo_entidad'] ?? '-');
                                     ?>
                                 </td>
                                 <td><?= htmlspecialchars($entidad['rep_nombre'] ?? '-') ?></td>
@@ -187,13 +220,142 @@ try {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
     function verDetalles(id) {
-        // Implementar vista de detalles
+        // Hacer petición AJAX para obtener los detalles de la entidad
+        fetch(`obtener_entidad_detalles.php?id=${id}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const entidad = data.entidad;
+                    
+                    // Mapear tipos de entidad
+                    const tiposEntidad = {
+                        'SA': 'Sociedad Anónima',
+                        'SR': 'Sociedad de Responsabilidad Limitada',
+                        'AS': 'Sociedad por Acciones Simplificada',
+                        'SC': 'Sociedad Colectiva',
+                        'CS': 'Sociedad en Comandita Simple',
+                        'CP': 'Sociedad en Comandita por Acciones',
+                        'AC': 'Asociación Civil',
+                        'FU': 'Fundación',
+                        'CO': 'Cooperativa',
+                        'MU': 'Mutual',
+                        'SI': 'Sindicato',
+                        'FE': 'Federación',
+                        'CF': 'Confederación',
+                        'UT': 'Unión Transitoria de Empresas',
+                        'AI': 'Agrupación de Interés Económico',
+                        'EN': 'Entidad sin Fines de Lucro',
+                        'ON': 'Organización No Gubernamental',
+                        'CL': 'Club Deportivo',
+                        'CC': 'Cámara de Comercio',
+                        'CI': 'Colegio de Ingenieros',
+                        'CM': 'Colegio de Médicos',
+                        'CA': 'Colegio de Abogados',
+                        'IN': 'Instituto',
+                        'UN': 'Universidad',
+                        'ES': 'Escuela',
+                        'CE': 'Centro Educativo',
+                        'HO': 'Hospital',
+                        'SN': 'Sanatorio',
+                        'CX': 'Centro de Salud',
+                        'IG': 'Iglesia',
+                        'PA': 'Parroquia',
+                        'OT': 'Otro'
+                    };
+                    
+                    // Mapear cargos de representante
+                    const cargos = {
+                        'PR': 'Presidente',
+                        'VP': 'Vicepresidente',
+                        'SE': 'Secretario',
+                        'TE': 'Tesorero',
+                        'DI': 'Director',
+                        'GE': 'Gerente',
+                        'AP': 'Apoderado',
+                        'AD': 'Administrador',
+                        'SY': 'Síndico',
+                        'RE': 'Rector',
+                        'DE': 'Decano',
+                        'CO': 'Coordinador'
+                    };
+                    
+                    // Construir el HTML con los detalles
+                    const detallesHtml = `
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-primary">Datos de la Entidad</h6>
+                                <p><strong>Razón Social:</strong><br>${entidad.razon_social || 'No especificada'}</p>
+                                <p><strong>CUIT:</strong> ${entidad.cuit || 'No especificado'}</p>
+                                <p><strong>Personería Jurídica:</strong> ${entidad.personeria || 'No especificada'}</p>
+                                <p><strong>Tipo de Entidad:</strong> ${tiposEntidad[entidad.tipo_entidad] || entidad.tipo_entidad || 'No especificado'}</p>
+                                <p><strong>Página Web:</strong> ${entidad.web ? `<a href="${entidad.web}" target="_blank">${entidad.web}</a>` : 'No especificada'}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-primary">Contacto</h6>
+                                <p><strong>Email:</strong> ${entidad.email || 'No especificado'}</p>
+                                <p><strong>Teléfono Fijo:</strong> ${entidad.tel_fijo || 'No especificado'}</p>
+                                <p><strong>Teléfono Celular:</strong> ${entidad.tel_celular || 'No especificado'}</p>
+                                
+                                <h6 class="text-primary mt-3">Domicilio</h6>
+                                <p><strong>Dirección:</strong> ${entidad.domicilio || 'No especificada'}</p>
+                                <p><strong>Localidad:</strong> ${entidad.localidad || 'No especificada'}</p>
+                                <p><strong>Provincia:</strong> ${entidad.provincia || 'No especificada'}</p>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <h6 class="text-primary">Representante Legal</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p><strong>Nombre y Apellido:</strong> ${entidad.rep_nombre || 'No especificado'}</p>
+                                        <p><strong>Documento:</strong> ${entidad.rep_documento || 'No especificado'}</p>
+                                        <p><strong>Cargo:</strong> ${cargos[entidad.rep_cargo] || entidad.rep_cargo || 'No especificado'}</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p><strong>Email:</strong> ${entidad.rep_email || 'No especificado'}</p>
+                                        <p><strong>Teléfono Fijo:</strong> ${entidad.rep_tel_fijo || 'No especificado'}</p>
+                                        <p><strong>Teléfono Celular:</strong> ${entidad.rep_tel_celular || 'No especificado'}</p>
+                                        <p><strong>Domicilio:</strong> ${entidad.rep_domicilio || 'No especificado'}</p>
+                                    </div>
+                                </div>
+                                <p><strong>Fecha de registro:</strong> ${entidad.fecha_creacion || 'No disponible'}</p>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Mostrar modal con SweetAlert2
+                    Swal.fire({
+                        title: `<strong>Detalles de la Entidad</strong>`,
+                        html: detallesHtml,
+                        width: '900px',
+                        showCloseButton: true,
+                        showConfirmButton: false,
+                        customClass: {
+                            htmlContainer: 'text-start'
+                        }
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Error',
+                        text: data.message || 'No se pudieron cargar los detalles',
+                        icon: 'error'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Error de conexión al cargar los detalles',
+                    icon: 'error'
+                });
+            });
     }
 
     function confirmarEliminar(id, nombre) {
         Swal.fire({
             title: '¿Eliminar entidad?',
-            html: `¿Está seguro que desea eliminar a <br><strong>${nombre}</strong>?`,
+            html: `¿Está seguro que desea eliminar a <br><strong>${nombre}</strong>?<br>Esta acción no se puede deshacer.`,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#dc3545',

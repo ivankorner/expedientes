@@ -113,28 +113,37 @@ try {
                             <div class="row g-3">
                                 <div class="col-md-3">
                                     <label for="lugar_nuevo" class="form-label">Nuevo lugar *</label>
-                                    <select class="form-select" id="lugar_nuevo" name="lugar_nuevo" required>
-                                        <option value="">Seleccione...</option>
-                                        <option value="Mesa de Entrada">Mesa de Entrada</option>
-                                        <option value="Comision I">Comisión I</option>
-                                        <option value="Comision II">Comisión II</option>
-                                        <option value="Comision III">Comisión III</option>
-                                        <option value="Comision IV">Comisión IV</option>
-                                        <option value="Comision V">Comisión V</option>
-                                        <option value="Comision VI">Comisión VI</option>
-                                        <option value="Comision VII">Comisión VII</option>
-                                        <option value="Concejo Comisión">Concejo Comisión</option>
-                                        <option value="Asesoria Legal">Asesoria Legal</option>
-                                        <option value="Asesoria Contable">Asesoria Contable</option>
-                                        <option value="Secretaria Legislativa Administrativa">Secretaria Legislativa Administrativa</option>
-                                        <option value="Secretaria Legislativa Parlamentaria">Secretaria Legislativa Parlamentaria</option>
-                                        <option value="Secretaria Legal y Técnica">Secretaria Legal y Técnica</option>
-                                        <option value="Secretaria Comunicacion e Informacion Parlamentaria">Secretaria Comunicacion e Informacion Parlamentaria</option>
-                                        <option value="Presidencia">Presidencia</option>
-                                        <option value="D.E.M">D.E.M</option>
-                                        <option value="Concejo Estudiantil">Concejo Estudiantil</option>
-                                        <option value="Archivo">Archivo</option>
-                                    </select>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="lugar_nuevo" 
+                                           name="lugar_nuevo" 
+                                           list="lugares_list" 
+                                           required 
+                                           placeholder="Escriba o seleccione un lugar">
+                                    <datalist id="lugares_list">
+                                        <option value="Mesa de Entrada">
+                                        <option value="Comision I">
+                                        <option value="Comision II">
+                                        <option value="Comision III">
+                                        <option value="Comision IV">
+                                        <option value="Comision V">
+                                        <option value="Comision VI">
+                                        <option value="Comision VII">
+                                        <option value="Concejo Comisión">
+                                        <option value="Asesoria Legal">
+                                        <option value="Asesoria Contable">
+                                        <option value="Secretaria Legislativa Administrativa">
+                                        <option value="Secretaria Legislativa Parlamentaria">
+                                        <option value="Secretaria Legal y Técnica">
+                                        <option value="Secretaria Comunicacion e Informacion Parlamentaria">
+                                        <option value="Presidencia">
+                                        <option value="Particular">
+                                        <option value="D.E.M">
+                                        <option value="Concejo Estudiantil">
+                                        <option value="Archivo">
+                                        <option value="Archivo Art. 75 R.I">
+                                       
+                                    </datalist>
                                 </div>
                                 <div class="col-md-3">
                                     <label for="tipo_movimiento" class="form-label">Tipo de movimiento *</label>

@@ -2,6 +2,52 @@
 session_start();
 require 'header.php';
 require 'head.php';
+
+// Verificar que se recibió el ID
+if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
+    $_SESSION['mensaje'] = "ID de entidad no válido";
+    $_SESSION['tipo_mensaje'] = "danger";
+    header('Location: listar_persona_juri_entidad.php');
+    exit;
+}
+
+$id = intval($_GET['id']);
+$entidad = null;
+
+try {
+    // Conectar a la base de datos
+    $db = new PDO(
+        "mysql:host=localhost;dbname=c2810161_iniciad;charset=utf8mb4",
+        "c2810161_iniciad",
+        "li62veMAdu",
+        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+    );
+
+    // Obtener los datos de la entidad
+    $sql = "SELECT * FROM persona_juri_entidad WHERE id = :id";
+    $stmt = $db->prepare($sql);
+    $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+    $stmt->execute();
+    
+    $entidad = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$entidad) {
+        $_SESSION['mensaje'] = "Entidad no encontrada";
+        $_SESSION['tipo_mensaje'] = "danger";
+        header('Location: listar_persona_juri_entidad.php');
+        exit;
+    }
+
+} catch (PDOException $e) {
+    $_SESSION['mensaje'] = "Error al cargar la entidad: " . $e->getMessage();
+    $_SESSION['tipo_mensaje'] = "danger";
+    header('Location: listar_persona_juri_entidad.php');
+    exit;
+}
+
+// Recuperar datos del formulario si hubo error
+$form_data = $_SESSION['form_data'] ?? $entidad;
+unset($_SESSION['form_data']);
 ?>
 
 <!DOCTYPE html>
@@ -13,12 +59,10 @@ require 'head.php';
             <?php require 'sidebar.php'; ?>
             
             <main class="col-12 col-md-10 ms-sm-auto px-4">
-                
-
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                    <h1>Nueva Persona Jurídica / Entidad</h1>
+                    <h1>Editar Entidad</h1>
                     <div>
-                        <a href="acciones_iniciadores.php" class="btn btn-secondary px-4 me-2">
+                        <a href="listar_persona_juri_entidad.php" class="btn btn-secondary px-4 me-2">
                             <i class="bi bi-arrow-left"></i> Volver
                         </a>
                         <a href="listar_persona_juri_entidad.php" class="btn btn-primary px-4">
@@ -27,14 +71,10 @@ require 'head.php';
                     </div>
                 </div>
 
-                <?php
-                // Recuperar datos del formulario si hubo error
-                $form_data = $_SESSION['form_data'] ?? [];
-                unset($_SESSION['form_data']);
-                ?>
-
-                <!-- Formulario de creación -->
-                <form action="procesar_carga_entidad.php" method="POST" class="needs-validation" novalidate>
+                <!-- Formulario de edición -->
+                <form action="procesar_editar_entidad.php" method="POST" class="needs-validation" novalidate>
+                    <input type="hidden" name="id" value="<?= $entidad['id'] ?>">
+                    
                     <div class="row">
                         <!-- Datos de la entidad -->
                         <div class="col-md-6">
@@ -74,38 +114,38 @@ require 'head.php';
                                         <label for="tipo_entidad" class="form-label">Tipo de Entidad *</label>
                                         <select class="form-select" id="tipo_entidad" name="tipo_entidad" required>
                                             <option value="">Seleccionar...</option>
-                                            <option value="SA" <?= ($form_data['tipo_entidad'] ?? '') === 'SA' ? 'selected' : '' ?>>Sociedad Anónima</option>
-                                            <option value="SR" <?= ($form_data['tipo_entidad'] ?? '') === 'SR' ? 'selected' : '' ?>>Sociedad de Responsabilidad Limitada</option>
-                                            <option value="AS" <?= ($form_data['tipo_entidad'] ?? '') === 'AS' ? 'selected' : '' ?>>Sociedad por Acciones Simplificada</option>
-                                            <option value="SC" <?= ($form_data['tipo_entidad'] ?? '') === 'SC' ? 'selected' : '' ?>>Sociedad Colectiva</option>
-                                            <option value="CS" <?= ($form_data['tipo_entidad'] ?? '') === 'CS' ? 'selected' : '' ?>>Sociedad en Comandita Simple</option>
-                                            <option value="CP" <?= ($form_data['tipo_entidad'] ?? '') === 'CP' ? 'selected' : '' ?>>Sociedad en Comandita por Acciones</option>
-                                            <option value="AC" <?= ($form_data['tipo_entidad'] ?? '') === 'AC' ? 'selected' : '' ?>>Asociación Civil</option>
-                                            <option value="FU" <?= ($form_data['tipo_entidad'] ?? '') === 'FU' ? 'selected' : '' ?>>Fundación</option>
-                                            <option value="CO" <?= ($form_data['tipo_entidad'] ?? '') === 'CO' ? 'selected' : '' ?>>Cooperativa</option>
-                                            <option value="MU" <?= ($form_data['tipo_entidad'] ?? '') === 'MU' ? 'selected' : '' ?>>Mutual</option>
-                                            <option value="SI" <?= ($form_data['tipo_entidad'] ?? '') === 'SI' ? 'selected' : '' ?>>Sindicato</option>
-                                            <option value="FE" <?= ($form_data['tipo_entidad'] ?? '') === 'FE' ? 'selected' : '' ?>>Federación</option>
-                                            <option value="CF" <?= ($form_data['tipo_entidad'] ?? '') === 'CF' ? 'selected' : '' ?>>Confederación</option>
-                                            <option value="UT" <?= ($form_data['tipo_entidad'] ?? '') === 'UT' ? 'selected' : '' ?>>Unión Transitoria de Empresas</option>
-                                            <option value="AI" <?= ($form_data['tipo_entidad'] ?? '') === 'AI' ? 'selected' : '' ?>>Agrupación de Interés Económico</option>
-                                            <option value="EN" <?= ($form_data['tipo_entidad'] ?? '') === 'EN' ? 'selected' : '' ?>>Entidad sin Fines de Lucro</option>
-                                            <option value="ON" <?= ($form_data['tipo_entidad'] ?? '') === 'ON' ? 'selected' : '' ?>>Organización No Gubernamental</option>
-                                            <option value="CL" <?= ($form_data['tipo_entidad'] ?? '') === 'CL' ? 'selected' : '' ?>>Club Deportivo</option>
-                                            <option value="CC" <?= ($form_data['tipo_entidad'] ?? '') === 'CC' ? 'selected' : '' ?>>Cámara de Comercio</option>
-                                            <option value="CI" <?= ($form_data['tipo_entidad'] ?? '') === 'CI' ? 'selected' : '' ?>>Colegio de Ingenieros</option>
-                                            <option value="CM" <?= ($form_data['tipo_entidad'] ?? '') === 'CM' ? 'selected' : '' ?>>Colegio de Médicos</option>
-                                            <option value="CA" <?= ($form_data['tipo_entidad'] ?? '') === 'CA' ? 'selected' : '' ?>>Colegio de Abogados</option>
-                                            <option value="IN" <?= ($form_data['tipo_entidad'] ?? '') === 'IN' ? 'selected' : '' ?>>Instituto</option>
-                                            <option value="UN" <?= ($form_data['tipo_entidad'] ?? '') === 'UN' ? 'selected' : '' ?>>Universidad</option>
-                                            <option value="ES" <?= ($form_data['tipo_entidad'] ?? '') === 'ES' ? 'selected' : '' ?>>Escuela</option>
-                                            <option value="CE" <?= ($form_data['tipo_entidad'] ?? '') === 'CE' ? 'selected' : '' ?>>Centro Educativo</option>
-                                            <option value="HO" <?= ($form_data['tipo_entidad'] ?? '') === 'HO' ? 'selected' : '' ?>>Hospital</option>
-                                            <option value="SN" <?= ($form_data['tipo_entidad'] ?? '') === 'SN' ? 'selected' : '' ?>>Sanatorio</option>
-                                            <option value="CX" <?= ($form_data['tipo_entidad'] ?? '') === 'CX' ? 'selected' : '' ?>>Centro de Salud</option>
-                                            <option value="IG" <?= ($form_data['tipo_entidad'] ?? '') === 'IG' ? 'selected' : '' ?>>Iglesia</option>
-                                            <option value="PA" <?= ($form_data['tipo_entidad'] ?? '') === 'PA' ? 'selected' : '' ?>>Parroquia</option>
-                                            <option value="OT" <?= ($form_data['tipo_entidad'] ?? '') === 'OT' ? 'selected' : '' ?>>Otro</option>
+                                            <option value="SA" <?= $entidad['tipo_entidad'] === 'SA' ? 'selected' : '' ?>>Sociedad Anónima</option>
+                                            <option value="SR" <?= $entidad['tipo_entidad'] === 'SR' ? 'selected' : '' ?>>Sociedad de Responsabilidad Limitada</option>
+                                            <option value="AS" <?= $entidad['tipo_entidad'] === 'AS' ? 'selected' : '' ?>>Sociedad por Acciones Simplificada</option>
+                                            <option value="SC" <?= $entidad['tipo_entidad'] === 'SC' ? 'selected' : '' ?>>Sociedad Colectiva</option>
+                                            <option value="CS" <?= $entidad['tipo_entidad'] === 'CS' ? 'selected' : '' ?>>Sociedad en Comandita Simple</option>
+                                            <option value="CP" <?= $entidad['tipo_entidad'] === 'CP' ? 'selected' : '' ?>>Sociedad en Comandita por Acciones</option>
+                                            <option value="AC" <?= $entidad['tipo_entidad'] === 'AC' ? 'selected' : '' ?>>Asociación Civil</option>
+                                            <option value="FU" <?= $entidad['tipo_entidad'] === 'FU' ? 'selected' : '' ?>>Fundación</option>
+                                            <option value="CO" <?= $entidad['tipo_entidad'] === 'CO' ? 'selected' : '' ?>>Cooperativa</option>
+                                            <option value="MU" <?= $entidad['tipo_entidad'] === 'MU' ? 'selected' : '' ?>>Mutual</option>
+                                            <option value="SI" <?= $entidad['tipo_entidad'] === 'SI' ? 'selected' : '' ?>>Sindicato</option>
+                                            <option value="FE" <?= $entidad['tipo_entidad'] === 'FE' ? 'selected' : '' ?>>Federación</option>
+                                            <option value="CF" <?= $entidad['tipo_entidad'] === 'CF' ? 'selected' : '' ?>>Confederación</option>
+                                            <option value="UT" <?= $entidad['tipo_entidad'] === 'UT' ? 'selected' : '' ?>>Unión Transitoria de Empresas</option>
+                                            <option value="AI" <?= $entidad['tipo_entidad'] === 'AI' ? 'selected' : '' ?>>Agrupación de Interés Económico</option>
+                                            <option value="EN" <?= $entidad['tipo_entidad'] === 'EN' ? 'selected' : '' ?>>Entidad sin Fines de Lucro</option>
+                                            <option value="ON" <?= $entidad['tipo_entidad'] === 'ON' ? 'selected' : '' ?>>Organización No Gubernamental</option>
+                                            <option value="CL" <?= $entidad['tipo_entidad'] === 'CL' ? 'selected' : '' ?>>Club Deportivo</option>
+                                            <option value="CC" <?= $entidad['tipo_entidad'] === 'CC' ? 'selected' : '' ?>>Cámara de Comercio</option>
+                                            <option value="CI" <?= $entidad['tipo_entidad'] === 'CI' ? 'selected' : '' ?>>Colegio de Ingenieros</option>
+                                            <option value="CM" <?= $entidad['tipo_entidad'] === 'CM' ? 'selected' : '' ?>>Colegio de Médicos</option>
+                                            <option value="CA" <?= $entidad['tipo_entidad'] === 'CA' ? 'selected' : '' ?>>Colegio de Abogados</option>
+                                            <option value="IN" <?= $entidad['tipo_entidad'] === 'IN' ? 'selected' : '' ?>>Instituto</option>
+                                            <option value="UN" <?= $entidad['tipo_entidad'] === 'UN' ? 'selected' : '' ?>>Universidad</option>
+                                            <option value="ES" <?= $entidad['tipo_entidad'] === 'ES' ? 'selected' : '' ?>>Escuela</option>
+                                            <option value="CE" <?= $entidad['tipo_entidad'] === 'CE' ? 'selected' : '' ?>>Centro Educativo</option>
+                                            <option value="HO" <?= $entidad['tipo_entidad'] === 'HO' ? 'selected' : '' ?>>Hospital</option>
+                                            <option value="SN" <?= $entidad['tipo_entidad'] === 'SN' ? 'selected' : '' ?>>Sanatorio</option>
+                                            <option value="CX" <?= $entidad['tipo_entidad'] === 'CX' ? 'selected' : '' ?>>Centro de Salud</option>
+                                            <option value="IG" <?= $entidad['tipo_entidad'] === 'IG' ? 'selected' : '' ?>>Iglesia</option>
+                                            <option value="PA" <?= $entidad['tipo_entidad'] === 'PA' ? 'selected' : '' ?>>Parroquia</option>
+                                            <option value="OT" <?= $entidad['tipo_entidad'] === 'OT' ? 'selected' : '' ?>>Otro</option>
                                         </select>
                                     </div>
                                     
@@ -223,18 +263,18 @@ require 'head.php';
                                         <label for="rep_cargo" class="form-label">Cargo</label>
                                         <select class="form-select" id="rep_cargo" name="rep_cargo">
                                             <option value="">Seleccionar...</option>
-                                            <option value="PR" <?= ($form_data['rep_cargo'] ?? '') === 'PR' ? 'selected' : '' ?>>Presidente</option>
-                                            <option value="VP" <?= ($form_data['rep_cargo'] ?? '') === 'VP' ? 'selected' : '' ?>>Vicepresidente</option>
-                                            <option value="SE" <?= ($form_data['rep_cargo'] ?? '') === 'SE' ? 'selected' : '' ?>>Secretario</option>
-                                            <option value="TE" <?= ($form_data['rep_cargo'] ?? '') === 'TE' ? 'selected' : '' ?>>Tesorero</option>
-                                            <option value="DI" <?= ($form_data['rep_cargo'] ?? '') === 'DI' ? 'selected' : '' ?>>Director</option>
-                                            <option value="GE" <?= ($form_data['rep_cargo'] ?? '') === 'GE' ? 'selected' : '' ?>>Gerente</option>
-                                            <option value="AP" <?= ($form_data['rep_cargo'] ?? '') === 'AP' ? 'selected' : '' ?>>Apoderado</option>
-                                            <option value="AD" <?= ($form_data['rep_cargo'] ?? '') === 'AD' ? 'selected' : '' ?>>Administrador</option>
-                                            <option value="SY" <?= ($form_data['rep_cargo'] ?? '') === 'SY' ? 'selected' : '' ?>>Síndico</option>
-                                            <option value="RE" <?= ($form_data['rep_cargo'] ?? '') === 'RE' ? 'selected' : '' ?>>Rector</option>
-                                            <option value="DE" <?= ($form_data['rep_cargo'] ?? '') === 'DE' ? 'selected' : '' ?>>Decano</option>
-                                            <option value="CO" <?= ($form_data['rep_cargo'] ?? '') === 'CO' ? 'selected' : '' ?>>Coordinador</option>
+                                            <option value="PR" <?= ($entidad['rep_cargo'] ?? '') === 'PR' ? 'selected' : '' ?>>Presidente</option>
+                                            <option value="VP" <?= ($entidad['rep_cargo'] ?? '') === 'VP' ? 'selected' : '' ?>>Vicepresidente</option>
+                                            <option value="SE" <?= ($entidad['rep_cargo'] ?? '') === 'SE' ? 'selected' : '' ?>>Secretario</option>
+                                            <option value="TE" <?= ($entidad['rep_cargo'] ?? '') === 'TE' ? 'selected' : '' ?>>Tesorero</option>
+                                            <option value="DI" <?= ($entidad['rep_cargo'] ?? '') === 'DI' ? 'selected' : '' ?>>Director</option>
+                                            <option value="GE" <?= ($entidad['rep_cargo'] ?? '') === 'GE' ? 'selected' : '' ?>>Gerente</option>
+                                            <option value="AP" <?= ($entidad['rep_cargo'] ?? '') === 'AP' ? 'selected' : '' ?>>Apoderado</option>
+                                            <option value="AD" <?= ($entidad['rep_cargo'] ?? '') === 'AD' ? 'selected' : '' ?>>Administrador</option>
+                                            <option value="SY" <?= ($entidad['rep_cargo'] ?? '') === 'SY' ? 'selected' : '' ?>>Síndico</option>
+                                            <option value="RE" <?= ($entidad['rep_cargo'] ?? '') === 'RE' ? 'selected' : '' ?>>Rector</option>
+                                            <option value="DE" <?= ($entidad['rep_cargo'] ?? '') === 'DE' ? 'selected' : '' ?>>Decano</option>
+                                            <option value="CO" <?= ($entidad['rep_cargo'] ?? '') === 'CO' ? 'selected' : '' ?>>Coordinador</option>
                                         </select>
                                     </div>
                                 </div>
@@ -276,16 +316,13 @@ require 'head.php';
                     <!-- Botones -->
                     <div class="d-flex justify-content-between mb-4">
                         <div>
-                            <button type="reset" class="btn btn-outline-secondary px-4 me-2">
-                                <i class="bi bi-eraser"></i> Limpiar Campos
-                            </button>
-                            <a href="acciones_iniciadores.php" class="btn btn-secondary px-4">
-                                <i class="bi bi-arrow-left"></i> Volver
+                            <a href="listar_persona_juri_entidad.php" class="btn btn-secondary px-4">
+                                <i class="bi bi-arrow-left"></i> Cancelar
                             </a>
                         </div>
                         
                         <button type="submit" class="btn btn-primary px-4">
-                            <i class="bi bi-save"></i> Guardar Entidad
+                            <i class="bi bi-save"></i> Actualizar Entidad
                         </button>
                     </div>
                 </form>
@@ -328,15 +365,12 @@ require 'head.php';
                 text: '<?= addslashes($mensaje) ?>',
                 showCancelButton: true,
                 confirmButtonText: 'Ir al Listado',
-                cancelButtonText: 'Crear Otra',
+                cancelButtonText: 'Seguir Editando',
                 confirmButtonColor: '#198754',
                 cancelButtonColor: '#6c757d'
             }).then((result) => {
                 if (result.isConfirmed) {
                     window.location.href = 'listar_persona_juri_entidad.php';
-                } else {
-                    // Limpiar el formulario para crear otra
-                    document.querySelector('form').reset();
                 }
             });
             <?php elseif ($tipo === 'danger' || $tipo === 'error'): ?>

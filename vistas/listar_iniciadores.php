@@ -72,9 +72,14 @@ try {
             <main class="col-12 col-md-10 ms-sm-auto px-4">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1>Listado de Iniciadores</h1>
-                    <a href="carga_iniciador.php" class="btn btn-primary px-4">
-                        <i class="bi bi-plus-circle"></i> Nuevo Iniciador
-                    </a>
+                    <div>
+                        <a href="carga_iniciador.php" class="btn btn-secondary px-4 me-2">
+                            <i class="bi bi-arrow-left"></i> Volver
+                        </a>
+                        <a href="carga_iniciador.php" class="btn btn-primary px-4">
+                            <i class="bi bi-plus-circle"></i> Nuevo Iniciador
+                        </a>
+                    </div>
                 </div>
 
                 <!-- Mensaje de éxito o error -->
@@ -175,6 +180,80 @@ try {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
+    function verDetalles(id) {
+        // Hacer petición AJAX para obtener los detalles del iniciador
+        fetch(`obtener_iniciador_detalles.php?id=${id}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const iniciador = data.iniciador;
+                    
+                    // Construir el HTML con los detalles
+                    const detallesHtml = `
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-primary">Datos Personales</h6>
+                                <p><strong>Nombre completo:</strong><br>${iniciador.apellido}, ${iniciador.nombre}</p>
+                                <p><strong>DNI:</strong> ${iniciador.dni}</p>
+                                <p><strong>CUIL:</strong> ${iniciador.cuil || 'No especificado'}</p>
+                                <p><strong>Fecha de nacimiento:</strong> ${iniciador.fecha_nacimiento || 'No especificada'}</p>
+                                <p><strong>Nacionalidad:</strong> ${iniciador.nacionalidad || 'No especificada'}</p>
+                                <p><strong>Estado civil:</strong> ${iniciador.estado_civil || 'No especificado'}</p>
+                                <p><strong>Profesión:</strong> ${iniciador.profesion || 'No especificada'}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-primary">Contacto</h6>
+                                <p><strong>Email:</strong> ${iniciador.email || 'No especificado'}</p>
+                                <p><strong>Teléfono:</strong> ${iniciador.tel || 'No especificado'}</p>
+                                <p><strong>Celular:</strong> ${iniciador.cel || 'No especificado'}</p>
+                                
+                                <h6 class="text-primary mt-3">Domicilio</h6>
+                                <p><strong>Calle:</strong> ${iniciador.calle || 'No especificada'}</p>
+                                <p><strong>Número:</strong> ${iniciador.numero || 'No especificado'}</p>
+                                <p><strong>Piso:</strong> ${iniciador.piso || 'No especificado'}</p>
+                                <p><strong>Departamento:</strong> ${iniciador.depto || 'No especificado'}</p>
+                                <p><strong>Localidad:</strong> ${iniciador.localidad || 'No especificada'}</p>
+                                <p><strong>Código Postal:</strong> ${iniciador.cp || 'No especificado'}</p>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <h6 class="text-primary">Información Adicional</h6>
+                                <p><strong>Observaciones:</strong> ${iniciador.observaciones || 'Sin observaciones'}</p>
+                                <p><strong>Fecha de registro:</strong> ${iniciador.fecha_creacion || 'No disponible'}</p>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Mostrar modal con SweetAlert2
+                    Swal.fire({
+                        title: `<strong>Detalles del Iniciador</strong>`,
+                        html: detallesHtml,
+                        width: '800px',
+                        showCloseButton: true,
+                        showConfirmButton: false,
+                        customClass: {
+                            htmlContainer: 'text-start'
+                        }
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Error',
+                        text: data.message || 'No se pudieron cargar los detalles',
+                        icon: 'error'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Error de conexión al cargar los detalles',
+                    icon: 'error'
+                });
+            });
+    }
+
     function confirmarEliminar(id, nombre) {
         Swal.fire({
             title: '¿Eliminar iniciador?',

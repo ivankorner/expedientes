@@ -32,10 +32,35 @@ try {
     }
 
     // Preparar los datos para insertar
+    $tipo_entidad = $_POST['tipo_entidad'] ?? null;
+    
+    // Validar y truncar tipo_entidad si es necesario
+    if ($tipo_entidad) {
+        // Primero intentar truncar a 2 caracteres (límite original)
+        $tipo_entidad = strtoupper(substr(trim($tipo_entidad), 0, 2));
+        
+        // Si está vacío después del trim, establecer como null
+        if (empty($tipo_entidad)) {
+            $tipo_entidad = null;
+        }
+    }
+    
+    // Validar y truncar cargo del representante si es necesario
+    $rep_cargo = $_POST['rep_cargo'] ?? null;
+    if ($rep_cargo) {
+        // Truncar a 2 caracteres (límite original)
+        $rep_cargo = strtoupper(substr(trim($rep_cargo), 0, 2));
+        
+        // Si está vacío después del trim, establecer como null
+        if (empty($rep_cargo)) {
+            $rep_cargo = null;
+        }
+    }
+    
     $datos = [
         'razon_social' => trim($_POST['razon_social'] ?? ''),
         'cuit' => trim($_POST['cuit'] ?? ''),
-        'tipo_entidad' => $_POST['tipo_entidad'] ?? null,
+        'tipo_entidad' => $tipo_entidad,
         'personeria' => trim($_POST['personeria'] ?? ''),
         'domicilio' => trim($_POST['domicilio'] ?? ''),
         'localidad' => trim($_POST['localidad'] ?? ''),
@@ -45,7 +70,7 @@ try {
         'email' => trim($_POST['email'] ?? ''),
         'web' => trim($_POST['web'] ?? ''),
         'rep_nombre' => trim($_POST['rep_nombre'] ?? ''),
-        'rep_cargo' => $_POST['rep_cargo'] ?? null,
+        'rep_cargo' => $rep_cargo,
         'rep_documento' => trim($_POST['rep_documento'] ?? ''),
         'rep_domicilio' => trim($_POST['rep_domicilio'] ?? ''),
         'rep_tel_fijo' => trim($_POST['rep_tel_fijo'] ?? ''),
