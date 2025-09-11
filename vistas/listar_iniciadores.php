@@ -39,9 +39,15 @@ try {
     $total_registros = $stmt->fetchColumn();
     $total_paginas = ceil($total_registros / $registros_por_pagina);
 
-    // Obtener registros de la página actual
-    $sql = "SELECT * FROM persona_fisica $where 
-            ORDER BY apellido, nombre 
+    // Obtener registros de la página actual con información de expedientes asociados
+    $sql = "SELECT pf.*, 
+            (SELECT COUNT(*) 
+             FROM expedientes e 
+             WHERE e.iniciador LIKE CONCAT('%', pf.apellido, ', ', pf.nombre, '%')
+            ) as expedientes_asociados
+            FROM persona_fisica pf 
+            $where 
+            ORDER BY pf.apellido, pf.nombre 
             LIMIT :offset, :limit";
     
     $stmt = $db->prepare($sql);
@@ -73,7 +79,20 @@ try {
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1>Listado de Iniciadores</h1>
                     <div>
-                        <a href="carga_iniciador.php" class="btn btn-secondary px-4 me-2">
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="bi bi-tools"></i> Herramientas
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="verificar_proteccion_eliminacion.php">
+                                    <i class="bi bi-shield-check"></i> Verificar Protecciones
+                                </a></li>
+                                <li><a class="dropdown-item" href="diagnostico_tabla.php">
+                                    <i class="bi bi-bug"></i> Diagnóstico de Base de Datos
+                                </a></li>
+                            </ul>
+                        </div>
+                        <a href="acciones_iniciadores.php" class="btn btn-secondary px-4 me-2">
                             <i class="bi bi-arrow-left"></i> Volver
                         </a>
                         <a href="carga_iniciador.php" class="btn btn-primary px-4">
@@ -116,6 +135,7 @@ try {
                                 <th>DNI</th>
                                 <th>Teléfono</th>
                                 <th>Email</th>
+                                <th>Expedientes</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
@@ -134,18 +154,38 @@ try {
                                 </td>
                                 <td><?= htmlspecialchars($iniciador['email'] ?? '-') ?></td>
                                 <td>
-                                    <button class="btn btn-sm btn-outline-info" 
-                                            onclick="verDetalles(<?= $iniciador['id'] ?>)">
-                                        <i class="bi bi-eye"></i>
-                                    </button>
-                                    <a href="editar_iniciador.php?id=<?= $iniciador['id'] ?>" 
-                                       class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-pencil"></i>
-                                    </a>
-                                    <button class="btn btn-sm btn-outline-danger"
-                                            onclick="confirmarEliminar(<?= $iniciador['id'] ?>, '<?= htmlspecialchars($iniciador['apellido'] . ', ' . $iniciador['nombre']) ?>')">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
+                                    <?php if ($iniciador['expedientes_asociados'] > 0): ?>
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="bi bi-folder"></i> <?= $iniciador['expedientes_asociados'] ?>
+                                        </span>
+                                        <small class="text-muted d-block">expediente(s)</small>
+                                    <?php else: ?>
+                                        <span class="text-muted">Sin expedientes</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <div class="btn-group">
+                                        <button class="btn btn-sm btn-outline-info" 
+                                                onclick="verDetalles(<?= $iniciador['id'] ?>)">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                        <a href="editar_iniciador.php?id=<?= $iniciador['id'] ?>" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <?php if ($iniciador['expedientes_asociados'] > 0): ?>
+                                            <button class="btn btn-sm btn-outline-secondary" 
+                                                    disabled
+                                                    title="No se puede eliminar: tiene <?= $iniciador['expedientes_asociados'] ?> expediente(s) asociado(s)">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        <?php else: ?>
+                                            <button class="btn btn-sm btn-outline-danger"
+                                                    onclick="confirmarEliminar(<?= $iniciador['id'] ?>, '<?= htmlspecialchars($iniciador['apellido'] . ', ' . $iniciador['nombre']) ?>')">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        <?php endif; ?>
+                                    </div>
                                 </td>
                             </tr>
                             <?php endforeach; ?>

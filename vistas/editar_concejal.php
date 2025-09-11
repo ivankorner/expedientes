@@ -2,6 +2,47 @@
 session_start();
 require 'header.php';
 require 'head.php';
+
+if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
+    $_SESSION['mensaje'] = "ID de concejal no válido.";
+    $_SESSION['tipo_mensaje'] = "danger";
+    header("Location: listar_concejales.php");
+    exit;
+}
+
+$id = intval($_GET['id']);
+
+try {
+    // Conectar a la base de datos
+    $db = new PDO(
+        "mysql:host=localhost;dbname=c2810161_iniciad;charset=utf8mb4",
+        "c2810161_iniciad",
+        "li62veMAdu",
+        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+    );
+
+    // Obtener datos del concejal
+    $stmt = $db->prepare("SELECT * FROM concejales WHERE id = ?");
+    $stmt->execute([$id]);
+    $concejal = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$concejal) {
+        $_SESSION['mensaje'] = "El concejal no existe.";
+        $_SESSION['tipo_mensaje'] = "danger";
+        header("Location: listar_concejales.php");
+        exit;
+    }
+
+} catch (Exception $e) {
+    $_SESSION['mensaje'] = "Error al cargar el concejal: " . $e->getMessage();
+    $_SESSION['tipo_mensaje'] = "danger";
+    header("Location: listar_concejales.php");
+    exit;
+}
+
+// Recuperar datos del formulario si hubo error
+$form_data = $_SESSION['form_data'] ?? $concejal;
+unset($_SESSION['form_data']);
 ?>
 
 <!DOCTYPE html>
@@ -15,25 +56,21 @@ require 'head.php';
             <main class="col-12 col-md-10 ms-sm-auto px-4">
                 
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                    <h1>Nuevo Concejal</h1>
+                    <h1>Editar Concejal</h1>
                     <div>
-                        <a href="acciones_iniciadores.php" class="btn btn-secondary px-4 me-2">
+                        <a href="listar_concejales.php" class="btn btn-secondary px-4 me-2">
                             <i class="bi bi-arrow-left"></i> Volver
                         </a>
-                        <a href="listar_concejales.php" class="btn btn-primary px-4">
-                            <i class="bi bi-journal-text"></i> Ver Listado
+                        <a href="carga_concejal.php" class="btn btn-primary px-4">
+                            <i class="bi bi-plus-circle"></i> Nuevo Concejal
                         </a>
                     </div>
                 </div>
 
-                <?php
-                // Recuperar datos del formulario si hubo error
-                $form_data = $_SESSION['form_data'] ?? [];
-                unset($_SESSION['form_data']);
-                ?>
-
-                <!-- Formulario de creación -->
-                <form action="procesar_carga_concejal.php" method="POST" class="needs-validation" novalidate>
+                <!-- Formulario de edición -->
+                <form action="procesar_editar_concejal.php" method="POST" class="needs-validation" novalidate>
+                    <input type="hidden" name="id" value="<?= $id ?>">
+                    
                     <div class="row">
                         <!-- Datos personales -->
                         <div class="col-md-6">
@@ -148,16 +185,16 @@ require 'head.php';
                     <!-- Botones -->
                     <div class="d-flex justify-content-between mb-4">
                         <div>
-                            <button type="reset" class="btn btn-outline-secondary px-4 me-2">
-                                <i class="bi bi-eraser"></i> Limpiar Campos
+                            <button type="reset" class="btn btn-outline-secondary px-4 me-2" onclick="resetForm()">
+                                <i class="bi bi-arrow-counterclockwise"></i> Restaurar
                             </button>
-                            <a href="acciones_iniciadores.php" class="btn btn-secondary px-4">
+                            <a href="listar_concejales.php" class="btn btn-secondary px-4">
                                 <i class="bi bi-arrow-left"></i> Volver
                             </a>
                         </div>
                         
                         <button type="submit" class="btn btn-primary px-4">
-                            <i class="bi bi-save"></i> Guardar Concejal
+                            <i class="bi bi-save"></i> Actualizar Concejal
                         </button>
                     </div>
                 </form>
@@ -168,6 +205,28 @@ require 'head.php';
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
+        // Datos originales para el reset
+        const datosOriginales = {
+            apellido: '<?= htmlspecialchars($concejal['apellido'] ?? '') ?>',
+            nombre: '<?= htmlspecialchars($concejal['nombre'] ?? '') ?>',
+            dni: '<?= htmlspecialchars($concejal['dni'] ?? '') ?>',
+            direccion: '<?= htmlspecialchars($concejal['direccion'] ?? '') ?>',
+            email: '<?= htmlspecialchars($concejal['email'] ?? '') ?>',
+            tel: '<?= htmlspecialchars($concejal['tel'] ?? '') ?>',
+            cel: '<?= htmlspecialchars($concejal['cel'] ?? '') ?>',
+            bloque: '<?= htmlspecialchars($concejal['bloque'] ?? '') ?>',
+            observacion: '<?= htmlspecialchars($concejal['observacion'] ?? '') ?>'
+        };
+
+        function resetForm() {
+            Object.keys(datosOriginales).forEach(campo => {
+                const elemento = document.getElementById(campo);
+                if (elemento) {
+                    elemento.value = datosOriginales[campo];
+                }
+            });
+        }
+
         // Validación de formulario
         (() => {
             'use strict';
@@ -221,26 +280,22 @@ require 'head.php';
             <?php if ($tipo === 'success'): ?>
             Swal.fire({
                 icon: 'success',
-                title: '¡Éxito!',
+                title: '¡Actualización Exitosa!',
                 text: '<?= addslashes($mensaje) ?>',
                 showCancelButton: true,
                 confirmButtonText: 'Ir al Listado',
-                cancelButtonText: 'Crear Otro',
+                cancelButtonText: 'Seguir Editando',
                 confirmButtonColor: '#198754',
                 cancelButtonColor: '#6c757d'
             }).then((result) => {
                 if (result.isConfirmed) {
                     window.location.href = 'listar_concejales.php';
-                } else {
-                    // Limpiar el formulario para crear otro
-                    document.querySelector('form').reset();
-                    document.querySelector('form').classList.remove('was-validated');
                 }
             });
             <?php elseif ($tipo === 'danger' || $tipo === 'error'): ?>
             Swal.fire({
                 icon: 'error',
-                title: 'Error al Guardar',
+                title: 'Error al Actualizar',
                 text: '<?= addslashes($mensaje) ?>',
                 confirmButtonColor: '#dc3545',
                 footer: '<small>Verifique los datos ingresados e intente nuevamente</small>'

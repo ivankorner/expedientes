@@ -41,9 +41,11 @@ try {
     $total = $stmt->fetchColumn();
     $total_paginas = ceil($total / $por_pagina);
 
-    // Obtener registros
-    $sql = "SELECT * FROM concejales $where 
-            ORDER BY apellido, nombre 
+    // Obtener registros (sin contar expedientes por ahora hasta verificar estructura)
+    $sql = "SELECT c.*
+            FROM concejales c 
+            $where 
+            ORDER BY c.apellido, c.nombre 
             LIMIT :offset, :limit";
     
     $stmt = $db->prepare($sql);
@@ -74,9 +76,17 @@ try {
             <main class="col-12 col-md-10 ms-sm-auto px-4">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1>Listado de Concejales</h1>
-                    <a href="carga_concejal.php" class="btn btn-primary px-4">
-                        <i class="bi bi-plus-circle"></i> Nuevo Concejal
-                    </a>
+                    <div>
+                        <a href="corrector_relaciones.php" class="btn btn-warning px-4 me-2">
+                            <i class="bi bi-tools"></i> Corregir Relaciones
+                        </a>
+                        <a href="verificar_estructura_tablas.php" class="btn btn-info px-4 me-2">
+                            <i class="bi bi-search"></i> Verificar Estructura
+                        </a>
+                        <a href="carga_concejal.php" class="btn btn-primary px-4">
+                            <i class="bi bi-plus-circle"></i> Nuevo Concejal
+                        </a>
+                    </div>
                 </div>
 
                 <?php if (isset($_SESSION['mensaje'])): ?>
@@ -127,6 +137,10 @@ try {
                                 </td>
                                 <td>
                                     <div class="btn-group">
+                                        <button class="btn btn-sm btn-outline-info" 
+                                                onclick="verDetalles(<?= $concejal['id'] ?>)">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
                                         <a href="editar_concejal.php?id=<?= $concejal['id'] ?>" 
                                            class="btn btn-sm btn-outline-primary">
                                             <i class="bi bi-pencil"></i>
@@ -170,6 +184,79 @@ try {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
+    // Inicializar tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    function verDetalles(id) {
+        // Hacer petición AJAX para obtener detalles del concejal
+        fetch(`obtener_concejal.php?id=${id}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const concejal = data.concejal;
+                    
+                    // Construir HTML para mostrar detalles
+                    let detallesHtml = `
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6><strong>Datos Personales:</strong></h6>
+                                <p><strong>Nombre completo:</strong> ${concejal.apellido}, ${concejal.nombre}</p>
+                                <p><strong>DNI:</strong> ${concejal.dni}</p>
+                                ${concejal.direccion ? `<p><strong>Dirección:</strong> ${concejal.direccion}</p>` : ''}
+                            </div>
+                            <div class="col-md-6">
+                                <h6><strong>Contacto:</strong></h6>
+                                ${concejal.email ? `<p><strong>Email:</strong> ${concejal.email}</p>` : ''}
+                                ${concejal.tel ? `<p><strong>Teléfono:</strong> ${concejal.tel}</p>` : ''}
+                                ${concejal.cel ? `<p><strong>Celular:</strong> ${concejal.cel}</p>` : ''}
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <h6><strong>Información Política:</strong></h6>
+                                ${concejal.bloque ? `<p><strong>Bloque:</strong> ${concejal.bloque}</p>` : '<p><em>Sin bloque asignado</em></p>'}
+                                ${concejal.observacion ? `<p><strong>Observaciones:</strong> ${concejal.observacion}</p>` : ''}
+                            </div>
+                        </div>
+                    `;
+
+                    Swal.fire({
+                        title: 'Detalles del Concejal',
+                        html: detallesHtml,
+                        width: '600px',
+                        showCancelButton: true,
+                        confirmButtonText: '<i class="bi bi-pencil"></i> Editar',
+                        cancelButtonText: 'Cerrar',
+                        confirmButtonColor: '#0d6efd',
+                        cancelButtonColor: '#6c757d'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.location.href = `editar_concejal.php?id=${id}`;
+                        }
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: data.message || 'No se pudieron cargar los detalles del concejal',
+                        confirmButtonColor: '#dc3545'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error de conexión',
+                    text: 'No se pudo conectar con el servidor',
+                    confirmButtonColor: '#dc3545'
+                });
+            });
+    }
+
     function confirmarEliminar(id, nombre) {
         Swal.fire({
             title: '¿Eliminar concejal?',

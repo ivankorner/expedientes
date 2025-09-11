@@ -113,6 +113,38 @@ if (!isset($_SESSION['usuario'])) {
                     </div>
                 </div>
                 <?php endif; ?>
+                
+                <!-- Herramientas de Desarrollo (solo para testing) -->
+                <?php if (isset($_SESSION['usuario']) && $_SESSION['usuario'] === 'admin'): ?>
+                <div class="row g-4 mt-4">
+                    <div class="col-12">
+                        <div class="card border-warning">
+                            <div class="card-header bg-warning bg-opacity-10">
+                                <h6 class="mb-0">🛠️ Herramientas de Desarrollo y Pruebas</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <a href="prueba_edicion_concejales.php" class="btn btn-outline-info btn-sm">
+                                            <i class="bi bi-bug"></i> Probar Edición Concejales
+                                        </a>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <a href="diagnostico_concejales.php" class="btn btn-outline-secondary btn-sm">
+                                            <i class="bi bi-wrench"></i> Diagnóstico Concejales
+                                        </a>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <a href="verificar_estructura_tablas.php" class="btn btn-outline-warning btn-sm">
+                                            <i class="bi bi-table"></i> Verificar Estructura
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
                 <!-- NO HAY FORMULARIO DE CONSULTA ACÁ -->
             </main>
         </div>
