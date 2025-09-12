@@ -58,7 +58,7 @@ try {
             "mysql:host=localhost;dbname=c2810161_iniciad;charset=utf8mb4",
         "c2810161_iniciad",
         "li62veMAdu",
-        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
         );
         if ($tipo === 'PF') {
             $stmt = $db_iniciadores->prepare("SELECT CONCAT(apellido, ', ', nombre, ' (', dni, ')') as nombre_completo FROM persona_fisica WHERE id = ?");
