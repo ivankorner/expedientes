@@ -1,6 +1,10 @@
 <?php
 session_start();
 
+// Headers para evitar cache en páginas dinámicas
+header('Cache-Control: no-cache, must-revalidate');
+header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
+
 // Validar ID
 $id = filter_var($_GET['id'] ?? null, FILTER_VALIDATE_INT);
 if (!$id) {
@@ -239,7 +243,7 @@ try {
     </td>
     -->
     <td>
-        <button type="button" class="btn btn-sm btn-outline-primary" onclick="editarPaseModal('<?= $pase['fecha_cambio'] ?>','<?= htmlspecialchars($pase['lugar_nuevo'],ENT_QUOTES) ?>',<?= $pase['id'] ?? 0 ?>)">
+        <button type="button" class="btn btn-sm btn-outline-primary" onclick="editarPaseModal('<?= $pase['fecha_cambio'] ?>','<?= htmlspecialchars($pase['lugar_nuevo'],ENT_QUOTES) ?>',<?= $pase['id'] ?? 0 ?>,'<?= htmlspecialchars($pase['tipo_movimiento'] ?? '',ENT_QUOTES) ?>','<?= htmlspecialchars($pase['numero_acta'] ?? '',ENT_QUOTES) ?>')">
             <i class="bi bi-pencil"></i> Editar
         </button>
         <button type="button" class="btn btn-sm btn-outline-danger ms-1" onclick="eliminarPase(<?= $pase['id'] ?? 0 ?>)">
@@ -340,49 +344,132 @@ function eliminarPase(id) {
         }
     });
 }
-function editarPaseModal(fecha, lugar, id) {
+function editarPaseModal(fecha, lugar, id, tipoMovimiento = '', numeroActa = '') {
     const lugares = [
         'Mesa de Entrada', 'Comision I', 'Comision II', 'Comision III', 'Comision IV', 'Comision V', 'Comision VI', 'Comision VII',
         'Concejo Comisión', 'Asesoria Legal', 'Asesoria Contable', 'Secretaria Legislativa Administrativa',
         'Secretaria Legislativa Parlamentaria', 'Secretaria Legal y Técnica', 'Secretaria Comunicacion e Informacion Parlamentaria',
-        'Presidencia', 'D.E.M', 'Concejo Estudiantil', 'Archivo'
+        'Presidencia', 'D.E.M', 'Concejo Estudiantil', 'Archivo', 'Archivo Art. 75 R.I'
     ];
-    let selectHtml = `<select id='lugarEdit' class='swal2-input' style='width:100%;margin-top:8px;'>`;
+    
+    let selectLugarHtml = `<select id='lugarEdit' class='swal2-input' style='width:100%;margin-top:8px;'>`;
     lugares.forEach(l => {
-        selectHtml += `<option value="${l}"${l === lugar ? ' selected' : ''}>${l}</option>`;
+        selectLugarHtml += `<option value="${l}"${l === lugar ? ' selected' : ''}>${l}</option>`;
     });
-    selectHtml += `</select>`;
+    selectLugarHtml += `</select>`;
+    
+    let selectTipoHtml = `<select id='tipoEdit' class='swal2-input' style='width:100%;margin-top:8px;'>
+        <option value="">Seleccione tipo de movimiento...</option>
+        <option value="Ingreso"${tipoMovimiento === 'Ingreso' ? ' selected' : ''}>Ingreso</option>
+        <option value="Salida"${tipoMovimiento === 'Salida' ? ' selected' : ''}>Salida</option>
+    </select>`;
+    
     Swal.fire({
         title: 'Editar pase',
-        html: `<input type='datetime-local' id='fechaEdit' class='swal2-input' value='${fecha.replace(' ', 'T')}'><br>${selectHtml}`,
+        html: `
+            <div style="text-align: left; margin-bottom: 10px;">
+                <label style="font-weight: bold; margin-bottom: 5px; display: block;">Fecha y hora:</label>
+                <input type='datetime-local' id='fechaEdit' class='swal2-input' value='${fecha.replace(' ', 'T')}' style='margin-top: 0;'>
+            </div>
+            <div style="text-align: left; margin-bottom: 10px;">
+                <label style="font-weight: bold; margin-bottom: 5px; display: block;">Nuevo lugar:</label>
+                ${selectLugarHtml}
+            </div>
+            <div style="text-align: left; margin-bottom: 10px;">
+                <label style="font-weight: bold; margin-bottom: 5px; display: block;">Tipo de movimiento:</label>
+                ${selectTipoHtml}
+            </div>
+            <div style="text-align: left; margin-bottom: 10px;">
+                <label style="font-weight: bold; margin-bottom: 5px; display: block;">Número de acta:</label>
+                <input type='text' id='actaEdit' class='swal2-input' value='${numeroActa}' placeholder='Ej: 123/2025' maxlength='30' style='margin-top: 0;'>
+            </div>
+        `,
         showCancelButton: true,
-        confirmButtonText: 'Guardar',
+        confirmButtonText: 'Guardar cambios',
         cancelButtonText: 'Cancelar',
+        width: '500px',
         preConfirm: () => {
             const fechaVal = document.getElementById('fechaEdit').value;
             const lugarVal = document.getElementById('lugarEdit').value;
-            if (!fechaVal || !lugarVal) {
-                Swal.showValidationMessage('Todos los campos son obligatorios');
+            const tipoVal = document.getElementById('tipoEdit').value;
+            const actaVal = document.getElementById('actaEdit').value;
+            
+            if (!fechaVal || !lugarVal || !tipoVal) {
+                Swal.showValidationMessage('Los campos fecha, lugar y tipo de movimiento son obligatorios');
                 return false;
             }
-            return {fecha: fechaVal, lugar: lugarVal};
+            return {
+                fecha: fechaVal, 
+                lugar: lugarVal, 
+                tipo: tipoVal, 
+                acta: actaVal
+            };
         }
     }).then((result) => {
         if (result.isConfirmed) {
+            // Mostrar loading
+            Swal.fire({
+                title: 'Actualizando...',
+                text: 'Por favor espere',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
             fetch('editar_pase.php', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                body: `id=${id}&fecha=${encodeURIComponent(result.value.fecha)}&lugar_nuevo=${encodeURIComponent(result.value.lugar)}`
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: `id=${id}&fecha=${encodeURIComponent(result.value.fecha)}&lugar_nuevo=${encodeURIComponent(result.value.lugar)}&tipo_movimiento=${encodeURIComponent(result.value.tipo)}&numero_acta=${encodeURIComponent(result.value.acta)}`
             })
-            .then(res => res.json())
+            .then(response => {
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.text().then(text => {
+                    console.log('Response text:', text);
+                    try {
+                        return JSON.parse(text);
+                    } catch (e) {
+                        console.error('Error parsing JSON:', e);
+                        throw new Error('Respuesta del servidor no es JSON válido: ' + text);
+                    }
+                });
+            })
             .then(data => {
                 if (data.success) {
-                    Swal.fire('Actualizado', data.message, 'success').then(()=>location.reload());
+                    Swal.fire({
+                        title: '¡Actualizado!',
+                        text: data.message,
+                        icon: 'success',
+                        confirmButtonText: 'Aceptar'
+                    }).then(() => {
+                        // Forzar recarga completa de la página
+                        window.location.reload(true);
+                    });
                 } else {
-                    Swal.fire('Error', data.message, 'error');
+                    Swal.fire({
+                        title: 'Error',
+                        text: data.message || 'No se pudo actualizar el pase',
+                        icon: 'error',
+                        confirmButtonText: 'Aceptar'
+                    });
                 }
             })
-            .catch(()=>Swal.fire('Error','No se pudo actualizar','error'));
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    title: 'Error de conexión',
+                    text: 'No se pudo conectar con el servidor. Verifique su conexión.',
+                    icon: 'error',
+                    confirmButtonText: 'Aceptar'
+                });
+            });
         }
     });
 }
