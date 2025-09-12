@@ -30,34 +30,6 @@ try {
     $stmt->execute([$id]);
     $expediente = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    // Obtener el ID del iniciador original
-    $iniciador_id = '';
-    // Buscar en personas físicas
-    foreach ($personas_fisicas as $pf) {
-        if ($expediente['iniciador'] === $pf['nombre_completo']) {
-            $iniciador_id = 'PF-' . $pf['id'];
-            break;
-        }
-    }
-    // Buscar en personas jurídicas
-    if (!$iniciador_id) {
-        foreach ($personas_juridicas as $pj) {
-            if ($expediente['iniciador'] === $pj['nombre_completo']) {
-                $iniciador_id = 'PJ-' . $pj['id'];
-                break;
-            }
-        }
-    }
-    // Buscar en concejales
-    if (!$iniciador_id) {
-        foreach ($concejales as $co) {
-            if ($expediente['iniciador'] === $co['nombre_completo']) {
-                $iniciador_id = 'CO-' . $co['id'];
-                break;
-            }
-        }
-    }
-
     if (!$expediente) {
         $_SESSION['mensaje'] = "Expediente no encontrado";
         $_SESSION['tipo_mensaje'] = "danger";
@@ -78,6 +50,93 @@ try {
     $personas_juridicas = $stmt->fetchAll(PDO::FETCH_ASSOC);
     $stmt = $db_iniciadores->query("SELECT id, CONCAT(apellido, ', ', nombre, ' - ', bloque) as nombre_completo FROM concejales ORDER BY apellido, nombre");
     $concejales = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Obtener el ID del iniciador original - versión mejorada
+    $iniciador_id = '';
+    $debug_info = [
+        'expediente_iniciador' => $expediente['iniciador'],
+        'personas_fisicas_count' => count($personas_fisicas),
+        'personas_juridicas_count' => count($personas_juridicas),
+        'concejales_count' => count($concejales)
+    ];
+    
+    // Función para normalizar strings para comparación
+    function normalizar_string($str) {
+        return trim(strtolower(preg_replace('/\s+/', ' ', $str)));
+    }
+    
+    $iniciador_normalizado = normalizar_string($expediente['iniciador']);
+    
+    // Buscar en personas físicas
+    foreach ($personas_fisicas as $pf) {
+        if (normalizar_string($pf['nombre_completo']) === $iniciador_normalizado) {
+            $iniciador_id = 'PF-' . $pf['id'];
+            $debug_info['found_in'] = 'personas_fisicas';
+            $debug_info['found_id'] = $iniciador_id;
+            $debug_info['found_name'] = $pf['nombre_completo'];
+            break;
+        }
+    }
+    
+    // Buscar en personas jurídicas
+    if (!$iniciador_id) {
+        foreach ($personas_juridicas as $pj) {
+            if (normalizar_string($pj['nombre_completo']) === $iniciador_normalizado) {
+                $iniciador_id = 'PJ-' . $pj['id'];
+                $debug_info['found_in'] = 'personas_juridicas';
+                $debug_info['found_id'] = $iniciador_id;
+                $debug_info['found_name'] = $pj['nombre_completo'];
+                break;
+            }
+        }
+    }
+    
+    // Buscar en concejales
+    if (!$iniciador_id) {
+        foreach ($concejales as $co) {
+            if (normalizar_string($co['nombre_completo']) === $iniciador_normalizado) {
+                $iniciador_id = 'CO-' . $co['id'];
+                $debug_info['found_in'] = 'concejales';
+                $debug_info['found_id'] = $iniciador_id;
+                $debug_info['found_name'] = $co['nombre_completo'];
+                break;
+            }
+        }
+    }
+    
+    // Si no se encuentra, intentar búsqueda por partes (apellido, nombre, etc.)
+    if (!$iniciador_id) {
+        $debug_info['fallback_search'] = true;
+        
+        // Intentar búsqueda parcial en personas físicas
+        foreach ($personas_fisicas as $pf) {
+            if (strpos($iniciador_normalizado, normalizar_string($pf['nombre_completo'])) !== false ||
+                strpos(normalizar_string($pf['nombre_completo']), $iniciador_normalizado) !== false) {
+                $iniciador_id = 'PF-' . $pf['id'];
+                $debug_info['found_in'] = 'personas_fisicas_partial';
+                $debug_info['found_id'] = $iniciador_id;
+                $debug_info['found_name'] = $pf['nombre_completo'];
+                break;
+            }
+        }
+        
+        // Intentar búsqueda parcial en concejales
+        if (!$iniciador_id) {
+            foreach ($concejales as $co) {
+                if (strpos($iniciador_normalizado, normalizar_string($co['nombre_completo'])) !== false ||
+                    strpos(normalizar_string($co['nombre_completo']), $iniciador_normalizado) !== false) {
+                    $iniciador_id = 'CO-' . $co['id'];
+                    $debug_info['found_in'] = 'concejales_partial';
+                    $debug_info['found_id'] = $iniciador_id;
+                    $debug_info['found_name'] = $co['nombre_completo'];
+                    break;
+                }
+            }
+        }
+    }
+    
+    // Log de debugging (solo en desarrollo)
+    error_log('DEBUG INICIADOR: ' . print_r($debug_info, true));
 } catch (PDOException $e) {
     $_SESSION['mensaje'] = "Error al cargar el expediente: " . $e->getMessage();
     $_SESSION['tipo_mensaje'] = "danger";
@@ -262,8 +321,19 @@ input[readonly] {
                             <!-- Iniciador -->
                             <div class="col-12 mb-2">
                                 <label for="iniciador" class="form-label">Iniciador</label>
+                                <?php if (!$iniciador_id): ?>
+                                    <div class="alert alert-warning mb-2">
+                                        <small><strong>Iniciador actual:</strong> <?= htmlspecialchars($expediente['iniciador']) ?></small><br>
+                                        <small><em>No se pudo encontrar en la base de datos de iniciadores. Seleccione uno nuevo o verifique los datos.</em></small>
+                                    </div>
+                                <?php endif; ?>
                                 <select id="iniciador" name="iniciador" class="form-select" required>
                                     <option value="">Seleccione un iniciador...</option>
+                                    <?php if (!$iniciador_id): ?>
+                                        <option value="<?= htmlspecialchars($expediente['iniciador']) ?>" selected>
+                                            <?= htmlspecialchars($expediente['iniciador']) ?> (ACTUAL)
+                                        </option>
+                                    <?php endif; ?>
                                     <?php if (!empty($personas_fisicas)): ?>
                                         <optgroup label="Personas Físicas">
                                             <?php foreach ($personas_fisicas as $persona): ?>
