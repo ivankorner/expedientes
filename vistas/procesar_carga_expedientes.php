@@ -110,12 +110,16 @@ try {
 
     $stmt = $db->prepare($sql);
     $stmt->execute($data);
+    
+    // Obtener el ID del expediente insertado
+    $expediente_id = $db->lastInsertId();
 
     // Confirmar transacción
     $db->commit();
 
     $_SESSION['mensaje'] = "Expediente guardado correctamente";
     $_SESSION['tipo_mensaje'] = "success";
+    $_SESSION['expediente_id'] = $expediente_id; // Guardar ID para el PDF
 
 } catch (PDOException $e) {
     // Revertir transacción

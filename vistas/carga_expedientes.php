@@ -65,6 +65,8 @@ try {
 
                     if (isset($_SESSION['mensaje'])) {
                         $tipo = $_SESSION['tipo_mensaje'] ?? 'info';
+                        $expediente_id = $_SESSION['expediente_id'] ?? null;
+                        
                         // Convertir tipo de Bootstrap a SweetAlert2
                         $icon = match($tipo) {
                             'success' => 'success',
@@ -75,16 +77,39 @@ try {
                         ?>
                         <script>
                             document.addEventListener('DOMContentLoaded', () => {
+                                <?php if ($tipo === 'success' && $expediente_id): ?>
+                                Swal.fire({
+                                    title: '<?= htmlspecialchars($_SESSION['mensaje']) ?>',
+                                    icon: '<?= $icon ?>',
+                                    html: '<p class="mb-3">El expediente se ha guardado correctamente en el sistema.</p>' +
+                                          '<div class="d-grid gap-2">' +
+                                          '<button type="button" class="btn btn-primary btn-lg" onclick="generarPDF(<?= $expediente_id ?>)">' +
+                                          '<i class="bi bi-file-earmark-pdf"></i> Descargar Comprobante PDF' +
+                                          '</button>' +
+                                          '</div>',
+                                    showConfirmButton: true,
+                                    confirmButtonText: 'Continuar',
+                                    confirmButtonColor: '#0d6efd',
+                                    allowOutsideClick: false,
+                                    width: '500px'
+                                });
+                                <?php else: ?>
                                 Swal.fire({
                                     title: '<?= htmlspecialchars($_SESSION['mensaje']) ?>',
                                     icon: '<?= $icon ?>',
                                     confirmButtonText: 'Aceptar',
                                     confirmButtonColor: '#0d6efd'
                                 });
+                                <?php endif; ?>
                             });
+                            
+                            function generarPDF(expedienteId) {
+                                // Abrir PDF con descarga automática y nombre específico
+                                window.open('pdf_auto_descarga.php?id=' + expedienteId, '_blank');
+                            }
                         </script>
                         <?php
-                        unset($_SESSION['mensaje'], $_SESSION['tipo_mensaje']);
+                        unset($_SESSION['mensaje'], $_SESSION['tipo_mensaje'], $_SESSION['expediente_id']);
                     }
                     ?>
                     <form action="procesar_carga_expedientes.php" method="post" autocomplete="off">
