@@ -19,8 +19,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $user = $stmt->fetch();
     if ($user && password_verify($contrasena, $user['password_hash'])) {
         $_SESSION['usuario'] = $user['username'];
-        $_SESSION['user_id'] = $user['id'];
-        $_SESSION['user_role'] = $user['role']; // Corregido: usar user_role en lugar de role
+        $_SESSION['usuario_id'] = $user['id']; // Corregido para consistencia
+        $_SESSION['rol'] = $user['role']; // Corregido para consistencia
         $_SESSION['is_superuser'] = ($user['is_superuser'] ?? 0) == 1;
         
         // Registrar el login en logs de seguridad

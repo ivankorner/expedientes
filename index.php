@@ -30,7 +30,8 @@ try {
     for ($i = 0; $i < 4; $i++) {
         $captcha .= $caracteres[random_int(0, strlen($caracteres) - 1)];
     }
-    $_SESSION['captcha'] = password_hash($captcha, PASSWORD_DEFAULT);
+    // Guardar el captcha en texto plano en la sesión para validación simple
+    $_SESSION['captcha_code'] = $captcha;
 } catch (Exception $e) {
     error_log('Error al generar captcha: ' . $e->getMessage());
     die('Error del sistema');
@@ -85,6 +86,13 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
                     <i class="bi bi-info-circle"></i> Los campos marcados con <span class="text-danger">*</span> son requeridos
                 </p>
 
+                <!-- Información sobre ceros a la izquierda -->
+                <div class="alert alert-info small">
+                    <i class="bi bi-lightbulb"></i> 
+                    <strong>Tip:</strong> Puede incluir ceros a la izquierda en los campos Número, Folio y Libro. 
+                    Por ejemplo: <code>000132</code>, <code>001234</code>, etc.
+                </div>
+
             <form action="resultados_publico.php" method="post" autocomplete="off">
                     <!-- Campo oculto para CSRF -->
 
@@ -97,10 +105,10 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
                                 id="numero"
                                 name="numero"
                                 class="form-control"
-                                placeholder="Ej: 132"
+                                placeholder="Ej: 132 o 000132"
                                 pattern="[0-9]{1,6}"
                                 maxlength="6"
-                                title="Solo números, máximo 6 dígitos"
+                                title="Solo números, máximo 6 dígitos (se permiten ceros a la izquierda)"
                                 required>
                         </div>
 
@@ -124,10 +132,10 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
                                 id="folio"
                                 name="folio"
                                 class="form-control"
-                                placeholder="Ej: 1234"
+                                placeholder="Ej: 1234 o 001234"
                                 pattern="[0-9]{1,6}"
                                 maxlength="6"
-                                title="Solo números, máximo 6 dígitos"
+                                title="Solo números, máximo 6 dígitos (se permiten ceros a la izquierda)"
                                 required>
                         </div>
                     </div>
@@ -140,10 +148,10 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
                                 id="libro"
                                 name="libro"
                                 class="form-control"
-                                placeholder="Ej: 1234"
+                                placeholder="Ej: 1234 o 001234"
                                 pattern="[0-9]{1,6}"
                                 maxlength="6"
-                                title="Solo números, máximo 6 dígitos"
+                                title="Solo números, máximo 6 dígitos (se permiten ceros a la izquierda)"
                                 required>
                         </div>
                         <!--  Año-->
@@ -177,11 +185,6 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
                     </div>
                     </div>
 
-
-
-
-
-                    
                     <div class="col-12 d-flex justify-content-end gap-2 mt-3">
                         <button type="reset" class="btn btn-outline-secondary px-4">
                             <i class="bi bi-eraser"></i> Limpiar Campos
@@ -189,18 +192,17 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
                         <button type="submit" class="btn btn-primary px-4">
                             <i class="bi bi-search"></i> Buscar
                         </button>
-                        
                     </div>
-            </div>
-            </form>
+                </form>
+            
             <?php
             if (isset($_SESSION['error'])) {
                 echo "<div class='alert alert-danger'>" . e($_SESSION['error']) . "</div>";
                 unset($_SESSION['error']);
             }
             ?>
+            </div>
         </div>
-    </div>
     </div>
 </body>
 </html>

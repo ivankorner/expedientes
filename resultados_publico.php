@@ -24,28 +24,67 @@ try {
     $campos_requeridos = ['numero', 'letra', 'folio', 'libro', 'anio', 'captcha'];
     foreach ($campos_requeridos as $campo) {
         if (empty($_POST[$campo])) {
-            throw new Exception("Todos los campos son requeridos");
+            throw new Exception("El campo '$campo' es requerido");
         }
     }
 
-    // Sanitizar y validar inputs
-    $numero = filter_var($_POST['numero'], FILTER_VALIDATE_INT);
-    $letra = strtoupper(substr($_POST['letra'], 0, 1));
-    $folio = filter_var($_POST['folio'], FILTER_VALIDATE_INT);
-    $libro = filter_var($_POST['libro'], FILTER_VALIDATE_INT);
-    $anio = filter_var($_POST['anio'], FILTER_VALIDATE_INT);
+    // Debug: mostrar valores recibidos (comentar en producción)
+    error_log("Valores recibidos - Número: " . $_POST['numero'] . ", Letra: " . $_POST['letra'] . ", Folio: " . $_POST['folio'] . ", Libro: " . $_POST['libro'] . ", Año: " . $_POST['anio']);
 
-    // Validar datos
-    if (!$numero || !$folio || !$libro || !$anio) {
-        throw new Exception("Los campos numéricos son inválidos");
+    // Sanitizar y validar inputs - MANTENER CEROS A LA IZQUIERDA
+    $numero_original = trim($_POST['numero']);
+    $letra = strtoupper(trim($_POST['letra']));
+    $folio_original = trim($_POST['folio']);
+    $libro_original = trim($_POST['libro']);
+    $anio = (int)trim($_POST['anio']);
+
+    // Validar que sean solo números pero conservar formato original
+    if (!preg_match('/^[0-9]{1,6}$/', $numero_original)) {
+        throw new Exception("El número del expediente debe contener solo dígitos (1-6 caracteres).");
+    }
+    if (!preg_match('/^[0-9]{1,6}$/', $folio_original)) {
+        throw new Exception("El folio debe contener solo dígitos (1-6 caracteres).");
+    }
+    if (!preg_match('/^[0-9]{1,6}$/', $libro_original)) {
+        throw new Exception("El libro debe contener solo dígitos (1-6 caracteres).");
+    }
+
+    // Convertir a enteros para validaciones de rango, pero conservar strings originales para la consulta
+    $numero_int = (int)$numero_original;
+    $folio_int = (int)$folio_original;
+    $libro_int = (int)$libro_original;
+
+    // Debug: mostrar valores después de validación
+    error_log("Después de validación - Número original: '$numero_original' (int: $numero_int), Folio original: '$folio_original' (int: $folio_int), Libro original: '$libro_original' (int: $libro_int), Año: $anio");
+
+    // Validar datos con mejor manejo de errores
+    if ($numero_int < 1 || $numero_int > 999999) {
+        throw new Exception("El número del expediente debe estar entre 1 y 999999.");
+    }
+    if ($folio_int < 1 || $folio_int > 999999) {
+        throw new Exception("El folio debe estar entre 1 y 999999.");
+    }
+    if ($libro_int < 1 || $libro_int > 999999) {
+        throw new Exception("El libro debe estar entre 1 y 999999.");
+    }
+    if ($anio < 1973 || $anio > 2030) {
+        throw new Exception("El año debe estar entre 1973 y 2030.");
     }
     
     if (!preg_match('/^[A-Z]$/', $letra)) {
-        throw new Exception("Letra inválida");
+        throw new Exception("La letra es inválida. Debe ser una letra de A a Z.");
+    }
+
+    // Validar CAPTCHA
+    if (!isset($_SESSION['captcha_code'])) {
+        throw new Exception("Sesión de CAPTCHA inválida. Recargue la página.");
     }
     
-    if ($anio < 1973 || $anio > 2030) {
-        throw new Exception("Año fuera de rango permitido");
+    $captcha_ingresado = strtoupper(trim($_POST['captcha']));
+    $captcha_correcto = $_SESSION['captcha_code'];
+    
+    if ($captcha_ingresado !== $captcha_correcto) {
+        throw new Exception("El código de verificación es incorrecto. Código ingresado: '$captcha_ingresado', esperado: '$captcha_correcto'");
     }
 
    // Conectar a la base de datos
@@ -56,25 +95,36 @@ try {
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
     );
 
-    // Consultar expediente
+    // Consultar expediente - Usar tanto valores originales como enteros para máxima compatibilidad
     $sql = "SELECT * FROM expedientes 
-            WHERE numero = :numero 
+            WHERE (numero = :numero_original OR numero = :numero_int)
             AND letra = :letra 
-            AND folio = :folio 
-            AND libro = :libro 
+            AND (folio = :folio_original OR folio = :folio_int)
+            AND (libro = :libro_original OR libro = :libro_int)
             AND anio = :anio 
             LIMIT 1";
 
     $stmt = $db->prepare($sql);
+    
+    // Debug: mostrar la consulta y parámetros
+    error_log("Consulta SQL: " . $sql);
+    error_log("Parámetros: numero_original='$numero_original', numero_int=$numero_int, letra='$letra', folio_original='$folio_original', folio_int=$folio_int, libro_original='$libro_original', libro_int=$libro_int, anio=$anio");
+    
     $stmt->execute([
-        ':numero' => $numero,
+        ':numero_original' => $numero_original,
+        ':numero_int' => $numero_int,
         ':letra' => $letra,
-        ':folio' => $folio,
-        ':libro' => $libro,
+        ':folio_original' => $folio_original,
+        ':folio_int' => $folio_int,
+        ':libro_original' => $libro_original,
+        ':libro_int' => $libro_int,
         ':anio' => $anio
     ]);
 
     $expediente = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    // Debug: mostrar resultado
+    error_log("Expediente encontrado: " . ($expediente ? "SI" : "NO"));
 
     // Agregar después de obtener el expediente
     if ($expediente) {
@@ -106,7 +156,7 @@ try {
     }
 
     // Limpiar CAPTCHA usado
-    unset($_SESSION['captcha']);
+    unset($_SESSION['captcha_code']);
 
 } catch (Exception $e) {
     $_SESSION['error'] = $e->getMessage();
@@ -248,7 +298,7 @@ try {
             <div class="card-body">
                 <h3 class="card-title mb-4 text-center" style="font-size:1.5rem; font-weight:bold; color:#0d6efd; background:#e9ecef; padding:15px; border-radius:8px;">
                     <i class="bi bi-file-earmark-text-fill me-2"></i>
-                    Expediente N°: <?= e($numero) ?>/<?= e($letra) ?>/<?= e($folio) ?>/<?= e($libro) ?>/<?= e($anio) ?>
+                    Expediente N°: <?= e($numero_original) ?>/<?= e($letra) ?>/<?= e($folio_original) ?>/<?= e($libro_original) ?>/<?= e($anio) ?>
                 </h3>
 
                 <?php if ($expediente): ?>
