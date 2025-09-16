@@ -119,6 +119,116 @@ function e($string) {
         .expediente-detalle-popup .badge {
             font-size: 0.8rem;
         }
+
+        /* Estilos del timeline como en resultados_publico.php */
+        .expediente-detalle-popup .tracking-timeline {
+            position: relative;
+            margin: 0 auto;
+            padding: 20px;
+            max-width: 900px;
+        }
+
+        .expediente-detalle-popup .tracking-timeline::after {
+            content: '';
+            position: absolute;
+            width: 4px;
+            background-color: #e9ecef;
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            margin-left: -2px;
+        }
+
+        .expediente-detalle-popup .tracking-container {
+            padding: 15px 40px;
+            position: relative;
+            width: 50%;
+            margin-bottom: 20px;
+        }
+
+        .expediente-detalle-popup .tracking-container::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            right: -14px;
+            background-color: white;
+            border: 3px solid #0d6efd;
+            top: 20px;
+            border-radius: 50%;
+            z-index: 1;
+        }
+
+        .expediente-detalle-popup .tracking-left {
+            left: 0;
+            padding-right: 50px;
+        }
+
+        .expediente-detalle-popup .tracking-right {
+            left: 50%;
+            padding-left: 50px;
+        }
+
+        .expediente-detalle-popup .tracking-right::after {
+            left: -14px;
+        }
+
+        .expediente-detalle-popup .tracking-content {
+            padding: 20px;
+            background-color: white;
+            position: relative;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+            margin: 0 10px;
+        }
+
+        .expediente-detalle-popup .tracking-content h3 {
+            margin: 0 0 10px 0;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .expediente-detalle-popup .tracking-content p {
+            margin: 8px 0;
+            font-size: 0.8rem;
+            color: #6c757d;
+            line-height: 1.4;
+        }
+
+        .expediente-detalle-popup .tracking-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        @media screen and (max-width: 600px) {
+            .expediente-detalle-popup .tracking-timeline::after {
+                left: 31px;
+            }
+            
+            .expediente-detalle-popup .tracking-container {
+                width: 100%;
+                padding-left: 70px;
+                padding-right: 25px;
+                margin-bottom: 15px;
+            }
+            
+            .expediente-detalle-popup .tracking-right {
+                left: 0%;
+                padding-left: 70px;
+            }
+            
+            .expediente-detalle-popup .tracking-left {
+                padding-right: 25px;
+            }
+            
+            .expediente-detalle-popup .tracking-container::after {
+                left: 15px;
+            }
+
+            .expediente-detalle-popup .tracking-content {
+                margin: 0 5px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -403,7 +513,7 @@ function e($string) {
                 showConfirmButton: true,
                 confirmButtonText: '<i class="bi bi-plus-circle me-2"></i>Nueva Búsqueda',
                 confirmButtonColor: '#28a745',
-                showCancelButton: true,
+                showCancelButton: false,
                 cancelButtonText: '<i class="bi bi-list-ul me-2"></i>Ver Todos los Resultados',
                 cancelButtonColor: '#007bff'
             }).then((result) => {
@@ -453,39 +563,55 @@ function e($string) {
                             <div class="mt-4">
                                 <h5 class="text-primary">
                                     <i class="bi bi-clock-history me-2"></i>
-                                    Historial de Movimientos
+                                    Historial de Ubicaciones
                                 </h5>
-                                <div class="timeline-container">
+                                <div class="tracking-timeline">
+                                    <!-- Mostrar lugar inicial -->
+                                    <div class="tracking-container tracking-left">
+                                        <div class="tracking-content">
+                                            <h3>Ingreso del Expediente</h3>
+                                            <p>Ubicación: Mesa de Entrada</p>
+                                            <p class="text-muted">
+                                                <i class="bi bi-clock"></i> 
+                                                ${exp.fecha_ingreso}
+                                            </p>
+                                        </div>
+                                    </div>
                         `;
                         
                         historial.forEach((movimiento, index) => {
+                            const containerClass = index % 2 == 0 ? 'tracking-right' : 'tracking-left';
                             historialHtml += `
-                                <div class="timeline-item mb-3">
-                                    <div class="card border-left-primary">
-                                        <div class="card-body p-3">
-                                            <div class="d-flex justify-content-between align-items-start">
-                                                <div>
-                                                    <h6 class="mb-1 text-primary">
-                                                        <i class="bi bi-arrow-right-circle me-1"></i>
-                                                        ${movimiento.tipo_movimiento || 'Movimiento'}
-                                                    </h6>
-                                                    <p class="mb-1">
-                                                        <strong>A:</strong> 
-                                                        <span class="badge bg-success">${movimiento.lugar_nuevo}</span>
-                                                    </p>
-                                                    ${movimiento.lugar_anterior ? `
-                                                        <p class="mb-1">
-                                                            <strong>Desde:</strong> 
-                                                            <span class="badge bg-secondary">${movimiento.lugar_anterior}</span>
-                                                        </p>
-                                                    ` : ''}
-                                                </div>
-                                                <small class="text-muted">
-                                                    <i class="bi bi-calendar me-1"></i>
-                                                    ${movimiento.fecha_formateada}
-                                                </small>
-                                            </div>
-                                        </div>
+                                <div class="tracking-container ${containerClass}">
+                                    <div class="tracking-content">
+                                        <h3>
+                                            <i class="bi bi-geo-alt-fill text-danger"></i>
+                                            Traslado de Expediente
+                                        </h3>
+                                        <p>
+                                            <span class="badge bg-primary">
+                                                <i class="bi bi-arrow-right-circle"></i>
+                                                ${movimiento.tipo_movimiento || 'Movimiento'}
+                                            </span>
+                                        </p>
+                                        <p>
+                                            <span class="fw-semibold text-secondary">
+                                                <i class="bi bi-box-arrow-in-right"></i> A:
+                                            </span>
+                                            <span class="badge bg-success">${movimiento.lugar_nuevo}</span>
+                                        </p>
+                                        ${movimiento.lugar_anterior ? `
+                                            <p>
+                                                <span class="fw-semibold text-secondary">
+                                                    <i class="bi bi-box-arrow-left"></i> Desde:
+                                                </span>
+                                                <span class="badge bg-secondary">${movimiento.lugar_anterior}</span>
+                                            </p>
+                                        ` : ''}
+                                        <p class="text-muted mb-0">
+                                            <i class="bi bi-calendar-event"></i>
+                                            ${movimiento.fecha_formateada}
+                                        </p>
                                     </div>
                                 </div>
                             `;
