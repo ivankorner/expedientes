@@ -94,6 +94,31 @@ function e($string) {
                 padding: 1.5rem;
             }
         }
+
+        /* Estilos para la ventana de detalles */
+        .expediente-detalle-popup {
+            font-size: 0.9rem;
+        }
+        
+        .expediente-detalle-popup .timeline-container {
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        
+        .expediente-detalle-popup .card.border-left-primary {
+            border-left: 4px solid #0d6efd !important;
+        }
+        
+        .expediente-detalle-popup .table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .expediente-detalle-popup .badge {
+            font-size: 0.8rem;
+        }
     </style>
 </head>
 <body>
@@ -355,9 +380,9 @@ function e($string) {
                                 </div>
                             </div>
                             <div class="text-end mt-2">
-                                <a href="pases_expediente.php?id=${exp.id}" class="btn btn-outline-primary btn-sm">
+                                <button onclick="verDetalleExpediente(${exp.id}, '${exp.numero}/${exp.letra}/${exp.folio}/${exp.libro}/${exp.anio}')" class="btn btn-outline-primary btn-sm">
                                     <i class="bi bi-eye me-1"></i>Ver Detalles
-                                </a>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -390,6 +415,174 @@ function e($string) {
                     document.getElementById('quickSearch').value = '';
                     document.getElementById('quickSearch').focus();
                 }
+            });
+        }
+
+        // Función para ver detalles completos de un expediente individual
+        function verDetalleExpediente(expedienteId, numeroCompleto) {
+            // Mostrar loading
+            Swal.fire({
+                title: 'Cargando detalles...',
+                text: 'Obteniendo información completa del expediente',
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                willOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // Realizar solicitud AJAX para obtener detalles completos
+            fetch('obtener_expediente.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'id=' + encodeURIComponent(expedienteId)
+            })
+            .then(response => response.json())
+            .then(data => {
+                Swal.close();
+                
+                if (data.success && data.expediente) {
+                    const exp = data.expediente;
+                    const historial = data.historial || [];
+                    
+                    let historialHtml = '';
+                    if (historial.length > 0) {
+                        historialHtml = `
+                            <div class="mt-4">
+                                <h5 class="text-primary">
+                                    <i class="bi bi-clock-history me-2"></i>
+                                    Historial de Movimientos
+                                </h5>
+                                <div class="timeline-container">
+                        `;
+                        
+                        historial.forEach((movimiento, index) => {
+                            historialHtml += `
+                                <div class="timeline-item mb-3">
+                                    <div class="card border-left-primary">
+                                        <div class="card-body p-3">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div>
+                                                    <h6 class="mb-1 text-primary">
+                                                        <i class="bi bi-arrow-right-circle me-1"></i>
+                                                        ${movimiento.tipo_movimiento || 'Movimiento'}
+                                                    </h6>
+                                                    <p class="mb-1">
+                                                        <strong>A:</strong> 
+                                                        <span class="badge bg-success">${movimiento.lugar_nuevo}</span>
+                                                    </p>
+                                                    ${movimiento.lugar_anterior ? `
+                                                        <p class="mb-1">
+                                                            <strong>Desde:</strong> 
+                                                            <span class="badge bg-secondary">${movimiento.lugar_anterior}</span>
+                                                        </p>
+                                                    ` : ''}
+                                                </div>
+                                                <small class="text-muted">
+                                                    <i class="bi bi-calendar me-1"></i>
+                                                    ${movimiento.fecha_formateada}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        
+                        historialHtml += `
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    Swal.fire({
+                        title: `<i class="bi bi-file-earmark-text-fill text-primary me-2"></i>Expediente ${numeroCompleto}`,
+                        html: `
+                            <div class="text-start">
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-sm">
+                                        <tbody>
+                                            <tr>
+                                                <th style="width: 150px;">Número:</th>
+                                                <td>${exp.numero}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Letra:</th>
+                                                <td>${exp.letra}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Folio:</th>
+                                                <td>${exp.folio}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Libro:</th>
+                                                <td>${exp.libro}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Año:</th>
+                                                <td>${exp.anio}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Fecha Ingreso:</th>
+                                                <td>${exp.fecha_ingreso}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Ubicación Actual:</th>
+                                                <td>
+                                                    <span class="badge bg-warning text-dark">${exp.lugar}</span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <th>Iniciador:</th>
+                                                <td>${exp.iniciador}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Extracto:</th>
+                                                <td>${exp.extracto}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                ${historialHtml}
+                            </div>
+                        `,
+                        width: '90%',
+                        showConfirmButton: true,
+                        confirmButtonText: '<i class="bi bi-arrow-left me-2"></i>Volver a Resultados',
+                        confirmButtonColor: '#6c757d',
+                        showCancelButton: true,
+                        cancelButtonText: '<i class="bi bi-file-earmark-pdf me-2"></i>Ver Página Completa',
+                        cancelButtonColor: '#0d6efd',
+                        customClass: {
+                            popup: 'expediente-detalle-popup'
+                        }
+                    }).then((result) => {
+                        if (result.dismiss === Swal.DismissReason.cancel) {
+                            // Abrir página completa de detalles
+                            window.open(`pases_expediente.php?id=${expedienteId}`, '_blank');
+                        }
+                    });
+                    
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: data.error || 'No se pudieron cargar los detalles del expediente',
+                        confirmButtonColor: '#dc3545'
+                    });
+                }
+            })
+            .catch(error => {
+                Swal.close();
+                console.error('Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error de conexión',
+                    text: 'No se pudo conectar con el servidor para obtener los detalles',
+                    confirmButtonColor: '#dc3545'
+                });
             });
         }
     </script>
