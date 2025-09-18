@@ -9,13 +9,9 @@ if (isset($_SESSION['mensaje']) && strpos($_SESSION['mensaje'], 'ID de expedient
 
 
 try {
-     // Conectar a la base de datos
-    $db = new PDO(
-        "mysql:host=localhost;dbname=c2810161_iniciad;charset=utf8mb4",
-        "c2810161_iniciad",
-        "li62veMAdu",
-        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-    );
+     // Conectar a la base de datos (usar base local)
+    require_once '../db/connection.php';
+    $db = $pdo;
 
     // Configuración de paginación
     $por_pagina = 10;
@@ -308,14 +304,40 @@ $query_string = $query_string ? '&' . $query_string : '';
                 fetch(`obtener_historial_pases.php?id=${id}`)
             ]);
 
-            const expediente = await expedienteResp.json();
-            const historial = await historialResp.json();
+            // Verificar que las respuestas sean exitosas
+            if (!expedienteResp.ok) {
+                throw new Error(`Error al obtener expediente: ${expedienteResp.status}`);
+            }
+            if (!historialResp.ok) {
+                throw new Error(`Error al obtener historial: ${historialResp.status}`);
+            }
+
+            const expedienteData = await expedienteResp.json();
+            const historialData = await historialResp.json();
+
+            // Verificar estructura de respuesta del expediente
+            console.log('Respuesta expediente:', expedienteData);
+            console.log('Respuesta historial:', historialData);
+
+            // Extraer datos del expediente según la estructura de obtener_expediente.php
+            let expediente;
+            if (expedienteData.success && expedienteData.expediente) {
+                expediente = expedienteData.expediente;
+            } else if (expedienteData.success && expedienteData.data) {
+                expediente = expedienteData.data;
+            } else {
+                expediente = expedienteData;
+            }
+            
+            // Verificar que tenemos los datos necesarios
+            if (!expediente || typeof expediente !== 'object') {
+                throw new Error('No se pudieron obtener los datos del expediente');
+            }
 
             // Crear tabla de historial
             let historialHTML = '';
-            if (historial.success && historial.data.length > 0) {
-                // Ya no necesitamos invertir el array porque viene ordenado de la base de datos
-                const historialOrdenado = historial.data;
+            if (historialData.success && historialData.data && historialData.data.length > 0) {
+                const historialOrdenado = historialData.data;
                 
                 historialHTML = `
                     <h6 class="mt-4 mb-3">Historial de Pases</h6>
@@ -331,41 +353,40 @@ $query_string = $query_string ? '&' . $query_string : '';
                             <tbody>
                                 ${historialOrdenado.map(pase => `
                                     <tr>
-                                        <td>${pase.fecha_formateada}</td>
-                                        <td>${pase.lugar_anterior}</td>
-                                        <td>${pase.lugar_nuevo}</td>
+                                        <td>${pase.fecha_formateada || 'N/A'}</td>
+                                        <td>${pase.lugar_anterior || 'N/A'}</td>
+                                        <td>${pase.lugar_nuevo || 'N/A'}</td>
                                     </tr>
                                 `).join('')}
                             </tbody>
                         </table>
                     </div>`;
+            } else {
+                historialHTML = '<p class="text-muted mt-3">No hay historial de pases disponible.</p>';
             }
+
+            // Formatear fecha de ingreso
+            const formatearFecha = (fecha) => {
+                if (!fecha) return 'N/A';
+                try {
+                    const d = new Date(fecha);
+                    if (isNaN(d.getTime())) return 'N/A';
+                    const pad = n => n.toString().padStart(2, '0');
+                    return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                } catch (e) {
+                    return 'N/A';
+                }
+            };
 
             // Mostrar modal con toda la información
             Swal.fire({
-                title: `Expediente ${expediente.numero}-${expediente.letra}-${expediente.folio}-${expediente.libro}-${expediente.anio}`,
+                title: `Expediente ${expediente.numero || 'N/A'}-${expediente.letra || 'N/A'}-${expediente.folio || 'N/A'}-${expediente.libro || 'N/A'}-${expediente.anio || 'N/A'}`,
                 html: `
                     <div class="text-start">
-                        <p><strong>Iniciador:</strong> ${expediente.iniciador}</p>
-                        <p><strong>Extracto:</strong> ${expediente.extracto}</p>
-
-
-                        <p><strong>Fecha de ingreso:</strong> <span class="badge rounded-pill text-bg-secondary">${
-                            expediente.fecha_hora_ingreso
-                                ? (() => {
-                                    const d = new Date(expediente.fecha_hora_ingreso);
-                                    const pad = n => n.toString().padStart(2, '0');
-                                    return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-                                })()
-                                : ''
-                        }</span></p>
-
-                        <p><strong>Lugar actual:</strong> <span class="badge rounded-pill text-bg-warning">${expediente.lugar}</span></p>
-
-
-
-
-                        
+                        <p><strong>Iniciador:</strong> ${expediente.iniciador || 'N/A'}</p>
+                        <p><strong>Extracto:</strong> ${expediente.extracto || 'N/A'}</p>
+                        <p><strong>Fecha de ingreso:</strong> <span class="badge rounded-pill text-bg-secondary">${formatearFecha(expediente.fecha_hora_ingreso)}</span></p>
+                        <p><strong>Lugar actual:</strong> <span class="badge rounded-pill text-bg-warning">${expediente.lugar || 'N/A'}</span></p>
                         ${historialHTML}
                     </div>
                 `,
@@ -376,8 +397,12 @@ $query_string = $query_string ? '&' . $query_string : '';
             });
 
         } catch (error) {
-            console.error('Error:', error);
-            Swal.fire('Error', 'No se pudo cargar la información', 'error');
+            console.error('Error completo:', error);
+            Swal.fire({
+                title: 'Error',
+                text: `No se pudo cargar la información: ${error.message}`,
+                icon: 'error'
+            });
         }
     }
 

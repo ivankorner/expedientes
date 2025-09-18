@@ -15,13 +15,9 @@ if (!$id) {
 }
 
 try {
-   // Conectar a la base de datos
-    $db = new PDO(
-        "mysql:host=localhost;dbname=c2810161_iniciad;charset=utf8mb4",
-        "c2810161_iniciad",
-        "li62veMAdu",
-        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-    );
+    // Conectar a la base de datos (usar base local)
+    require_once '../db/connection.php';
+    $db = $pdo;
 
     // Obtener datos del expediente
     $stmt = $db->prepare("SELECT * FROM expedientes WHERE id = ?");
@@ -40,21 +36,24 @@ try {
             DATE_FORMAT(hl.fecha_cambio, '%d/%m/%Y %H:%i') as fecha_formateada,
             hl.lugar_anterior,
             hl.lugar_nuevo,
-            TIMESTAMPDIFF(HOUR, e.fecha_hora_ingreso, hl.fecha_cambio) as horas_desde_ingreso,
-            TIMESTAMPDIFF(HOUR, 
-                LAG(hl.fecha_cambio) OVER (ORDER BY hl.fecha_cambio),
-                hl.fecha_cambio
-            ) as horas_desde_ultimo_pase,
             hl.tipo_movimiento,
             hl.numero_acta,
-            0 as es_ingreso
+            hl.usuario_id,
+            TIMESTAMPDIFF(HOUR, e.fecha_hora_ingreso, hl.fecha_cambio) as horas_desde_ingreso
         FROM historial_lugares hl
         JOIN expedientes e ON hl.expediente_id = e.id
         WHERE hl.expediente_id = ?
-        ORDER BY hl.fecha_cambio ASC
+        ORDER BY hl.fecha_cambio DESC
     ");
     $stmt->execute([$id]);
     $historial = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Debug temporal - comentar en producción
+    error_log("Expediente ID: $id");
+    error_log("Registros encontrados en historial: " . count($historial));
+    if (!empty($historial)) {
+        error_log("Primer registro: " . json_encode($historial[0]));
+    }
 
 } catch (Exception $e) {
     $_SESSION['mensaje'] = "Error: " . $e->getMessage();
@@ -90,6 +89,44 @@ try {
         .text-muted {
             color: #6c757d !important;
         }
+
+        /* Estilos para ordenamiento de tabla */
+        .sortable {
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            padding-right: 20px !important;
+        }
+
+        .sortable:hover {
+            background-color: rgba(0,0,0,0.05);
+        }
+
+        .sortable::after {
+            content: "⇅";
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+            font-size: 12px;
+        }
+
+        .sortable.asc::after {
+            content: "↑";
+            color: #0d6efd;
+            font-weight: bold;
+        }
+
+        .sortable.desc::after {
+            content: "↓";
+            color: #0d6efd;
+            font-weight: bold;
+        }
+
+        .non-sortable {
+            cursor: default;
+        }
     </style>
 </head>
 <body>
@@ -108,15 +145,24 @@ try {
                 </div>
 
                 <!-- Formulario de nuevo pase -->
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <h5 class="card-title">Registrar nuevo pase</h5>
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header bg-primary text-white py-2">
+                        <h6 class="card-title mb-0">
+                            <i class="bi bi-plus-circle me-2"></i>
+                            Registrar nuevo pase
+                        </h6>
+                    </div>
+                    <div class="card-body py-3">
                         <form id="formPase" action="procesar_pase.php" method="POST">
                             <input type="hidden" name="expediente_id" value="<?= $expediente['id'] ?>">
                             <input type="hidden" name="lugar_anterior" value="<?= htmlspecialchars($expediente['lugar']) ?>">
+                            
                             <div class="row g-3">
-                                <div class="col-md-3">
-                                    <label for="lugar_nuevo" class="form-label">Nuevo lugar *</label>
+                                <div class="col-lg-3 col-md-6">
+                                    <label for="lugar_nuevo" class="form-label fw-semibold mb-1">
+                                        <i class="bi bi-geo-alt me-1"></i>
+                                        Nuevo lugar *
+                                    </label>
                                     <input type="text" 
                                            class="form-control" 
                                            id="lugar_nuevo" 
@@ -147,33 +193,51 @@ try {
                                         <option value="Archivo">
                                         <option value="Archivo Art. 75 R.I">
                                         <option value="Reunión">
-                                       
                                     </datalist>
                                 </div>
-                                <div class="col-md-3">
-                                    <label for="tipo_movimiento" class="form-label">Tipo de movimiento *</label>
+                                
+                                <div class="col-lg-3 col-md-6">
+                                    <label for="tipo_movimiento" class="form-label fw-semibold mb-1">
+                                        <i class="bi bi-arrow-left-right me-1"></i>
+                                        Tipo de movimiento *
+                                    </label>
                                     <select class="form-select" id="tipo_movimiento" name="tipo_movimiento" required>
                                         <option value="">Seleccione...</option>
-                                        <option value="Ingreso">Ingreso</option>
-                                        <option value="Salida">Salida</option>
+                                        <option value="Ingreso">📥 Ingreso</option>
+                                        <option value="Salida">📤 Salida</option>
                                     </select>
                                 </div>
-                                <div class="col-md-3">
-                                    <label for="fecha_hora" class="form-label">Fecha y hora *</label>
+                                
+                                <div class="col-lg-3 col-md-6">
+                                    <label for="fecha_hora" class="form-label fw-semibold mb-1">
+                                        <i class="bi bi-calendar-event me-1"></i>
+                                        Fecha y hora *
+                                    </label>
                                     <input type="datetime-local" 
                                            class="form-control" 
                                            id="fecha_hora" 
                                            name="fecha_hora"
                                            required>
                                 </div>
-                                <div class="col-md-3">
-                                    <label for="numero_acta" class="form-label">Número de Acta</label>
-                                    <input type="text" class="form-control" id="numero_acta" name="numero_acta" maxlength="30" placeholder="Ej: 123/2025">
+                                
+                                <div class="col-lg-3 col-md-6">
+                                    <label for="numero_acta" class="form-label fw-semibold mb-1">
+                                        <i class="bi bi-file-text me-1"></i>
+                                        Número de Acta
+                                    </label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="numero_acta" 
+                                           name="numero_acta" 
+                                           maxlength="30" 
+                                           placeholder="Ej: 123/2025">
                                 </div>
                             </div>
-                            <div class="mt-3">
+                            
+                            <div class="text-center mt-3">
                                 <button type="submit" class="btn btn-primary px-4">
-                                    <i class="bi bi-save"></i> Guardar Pase
+                                    <i class="bi bi-save me-2"></i> 
+                                    Guardar Pase
                                 </button>
                             </div>
                         </form>
@@ -183,7 +247,16 @@ try {
                 <!-- Historial de pases -->
                 <div class="card">
                     <div class="card-body">
-                        <h5 class="card-title">Historial de pases</h5>
+                        <h5 class="card-title">
+                            <i class="bi bi-clock-history me-2"></i>
+                            Historial de pases (<?= count($historial) ?> registros)
+                        </h5>
+                        <?php if (count($historial) == 0): ?>
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle me-2"></i>
+                                No hay pases registrados para este expediente. Use el formulario de arriba para registrar el primer pase.
+                            </div>
+                        <?php endif; ?>
                         <div class="table-responsive">
                             <div class="mb-3">
                                 
@@ -199,52 +272,42 @@ try {
                                 <strong>Lugar actual:</strong> <span class="badge rounded-pill text-bg-warning"><?= htmlspecialchars($expediente['lugar']) ?></span>
                                 
                             </div>
-                            <table class="table table-striped table-hover">
+                            <table class="table table-striped table-hover" id="historialTable">
                                 <thead>
                                     <tr>
-                                        <th>Fecha y Hora</th>
-                                        <th>Desde <i class="bi bi-arrow-right"></i></th>
-                                        <th>Hacia</th>
-                                        <th>Movimiento</th>
-                                        <th>N° de Acta</th>
-                                        <th>Tiempo desde ingreso</th>
-                                        
-                                        <th>Línea de tiempo</th>
+                                        <th class="sortable" data-column="0" data-type="date">Fecha y Hora</th>
+                                        <th class="sortable" data-column="1" data-type="text">Desde <i class="bi bi-arrow-right"></i></th>
+                                        <th class="sortable" data-column="2" data-type="text">Hacia</th>
+                                        <th class="sortable" data-column="3" data-type="text">Movimiento</th>
+                                        <th class="sortable" data-column="4" data-type="text">N° de Acta</th>
+                                        <th class="sortable" data-column="5" data-type="numeric">Tiempo desde ingreso</th>
+                                        <th class="non-sortable">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php foreach ($historial as $pase): 
-    $horas_desde_ingreso = $pase['horas_desde_ingreso'];
+                                    <?php if (empty($historial)): ?>
+                                        <tr>
+                                            <td colspan="7" class="text-center text-muted">
+                                                <i class="bi bi-info-circle me-2"></i>
+                                                No hay historial de pases para este expediente
+                                            </td>
+                                        </tr>
+                                    <?php else: ?>
+                                        <?php foreach ($historial as $pase): 
+    $horas_desde_ingreso = $pase['horas_desde_ingreso'] ?? 0;
     $dias_desde_ingreso = floor($horas_desde_ingreso / 24);
     $horas_resto_ingreso = $horas_desde_ingreso % 24;
-    
-    $horas_desde_ultimo = $pase['horas_desde_ultimo_pase'];
-    $dias_desde_ultimo = $horas_desde_ultimo ? floor($horas_desde_ultimo / 24) : 0;
-    $horas_resto_ultimo = $horas_desde_ultimo ? $horas_desde_ultimo % 24 : 0;
-    
-    $max_horas = max(array_column($historial, 'horas_desde_ingreso'));
-    $porcentaje = ($horas_desde_ingreso / $max_horas) * 100;
+    $fecha_timestamp = strtotime($pase['fecha_cambio']);
 ?>
 <tr>
-    <td><?= $pase['fecha_formateada'] ?></td>
-    <td><?= htmlspecialchars($pase['lugar_anterior']) ?></td>
-    <td><?= htmlspecialchars($pase['lugar_nuevo']) ?></td>
-    <td><?= htmlspecialchars($pase['tipo_movimiento'] ?? (($pase['lugar_anterior'] === $pase['lugar_nuevo']) ? 'Ingreso' : 'Salida')) ?></td>
-    <td><?= htmlspecialchars($pase['numero_acta'] ?? '') ?></td>
-    <td><?= $dias_desde_ingreso ?> días, <?= $horas_resto_ingreso ?> horas</td>
-    
-    <!--
-    <td style="width: 200px;">
-        <div class="progress" style="height: 20px;">
-            <div class="progress-bar bg-info" role="progressbar" style="width: <?= $porcentaje ?>%"
-                 aria-valuenow="<?= $porcentaje ?>" aria-valuemin="0" aria-valuemax="100"
-                 data-bs-toggle="tooltip" title="<?= "$dias_desde_ingreso días, $horas_resto_ingreso horas" ?>">
-            </div>
-        </div>
-    </td>
-    -->
+    <td data-sort="<?= $fecha_timestamp ?>"><?= $pase['fecha_formateada'] ?></td>
+    <td data-sort="<?= htmlspecialchars($pase['lugar_anterior'] ?? '') ?>"><?= htmlspecialchars($pase['lugar_anterior'] ?? '') ?></td>
+    <td data-sort="<?= htmlspecialchars($pase['lugar_nuevo'] ?? '') ?>"><?= htmlspecialchars($pase['lugar_nuevo'] ?? '') ?></td>
+    <td data-sort="<?= htmlspecialchars($pase['tipo_movimiento'] ?? 'Movimiento') ?>"><?= htmlspecialchars($pase['tipo_movimiento'] ?? 'Movimiento') ?></td>
+    <td data-sort="<?= htmlspecialchars($pase['numero_acta'] ?? '') ?>"><?= htmlspecialchars($pase['numero_acta'] ?? '') ?></td>
+    <td data-sort="<?= $horas_desde_ingreso ?>"><?= $dias_desde_ingreso ?> días, <?= $horas_resto_ingreso ?> horas</td>
     <td>
-        <button type="button" class="btn btn-sm btn-outline-primary" onclick="editarPaseModal('<?= $pase['fecha_cambio'] ?>','<?= htmlspecialchars($pase['lugar_nuevo'],ENT_QUOTES) ?>',<?= $pase['id'] ?? 0 ?>,'<?= htmlspecialchars($pase['tipo_movimiento'] ?? '',ENT_QUOTES) ?>','<?= htmlspecialchars($pase['numero_acta'] ?? '',ENT_QUOTES) ?>')">
+        <button type="button" class="btn btn-sm btn-outline-primary" onclick="editarPaseModal('<?= $pase['fecha_cambio'] ?>','<?= htmlspecialchars($pase['lugar_nuevo'] ?? '',ENT_QUOTES) ?>',<?= $pase['id'] ?? 0 ?>,'<?= htmlspecialchars($pase['tipo_movimiento'] ?? '',ENT_QUOTES) ?>','<?= htmlspecialchars($pase['numero_acta'] ?? '',ENT_QUOTES) ?>')">
             <i class="bi bi-pencil"></i> Editar
         </button>
         <button type="button" class="btn btn-sm btn-outline-danger ms-1" onclick="eliminarPase(<?= $pase['id'] ?? 0 ?>)">
@@ -253,6 +316,7 @@ try {
     </td>
 </tr>
 <?php endforeach; ?>
+                                    <?php endif; ?>
                                 </tbody>
                             </table>
                         </div>
@@ -263,6 +327,94 @@ try {
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// Funcionalidad de ordenamiento de tabla
+class TableSorter {
+    constructor(tableId) {
+        this.table = document.getElementById(tableId);
+        this.tbody = this.table.querySelector('tbody');
+        this.headers = this.table.querySelectorAll('th.sortable');
+        this.currentSort = { column: -1, direction: 'asc' };
+        this.init();
+    }
+
+    init() {
+        this.headers.forEach((header, index) => {
+            header.addEventListener('click', () => this.sortTable(index, header));
+        });
+    }
+
+    sortTable(columnIndex, header) {
+        const dataType = header.getAttribute('data-type');
+        const rows = Array.from(this.tbody.querySelectorAll('tr'));
+        
+        // Determinar dirección del ordenamiento
+        let direction = 'asc';
+        if (this.currentSort.column === columnIndex && this.currentSort.direction === 'asc') {
+            direction = 'desc';
+        }
+        
+        // Limpiar clases de otros encabezados
+        this.headers.forEach(h => h.classList.remove('asc', 'desc'));
+        
+        // Agregar clase al encabezado actual
+        header.classList.add(direction);
+        
+        // Ordenar filas
+        rows.sort((a, b) => {
+            const aVal = this.getCellValue(a, columnIndex, dataType);
+            const bVal = this.getCellValue(b, columnIndex, dataType);
+            
+            let result = this.compareValues(aVal, bVal, dataType);
+            return direction === 'desc' ? -result : result;
+        });
+        
+        // Reorganizar filas en el DOM
+        rows.forEach(row => this.tbody.appendChild(row));
+        
+        // Actualizar estado actual
+        this.currentSort = { column: columnIndex, direction: direction };
+    }
+
+    getCellValue(row, columnIndex, dataType) {
+        const cell = row.cells[columnIndex];
+        const sortValue = cell.getAttribute('data-sort');
+        
+        if (sortValue) {
+            if (dataType === 'numeric' || dataType === 'date') {
+                return parseFloat(sortValue) || 0;
+            }
+            return sortValue.toLowerCase();
+        }
+        
+        const textValue = cell.textContent.trim();
+        if (dataType === 'numeric') {
+            // Extraer números del texto (para "X días, Y horas")
+            const match = textValue.match(/(\d+)/);
+            return match ? parseFloat(match[1]) : 0;
+        }
+        
+        return textValue.toLowerCase();
+    }
+
+    compareValues(a, b, dataType) {
+        if (dataType === 'numeric' || dataType === 'date') {
+            return a - b;
+        }
+        
+        if (a < b) return -1;
+        if (a > b) return 1;
+        return 0;
+    }
+}
+
+// Inicializar ordenamiento cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', function() {
+    if (document.getElementById('historialTable')) {
+        new TableSorter('historialTable');
+    }
+});
+</script>
 <script>
 // Manejar envío del formulario de nuevo pase
 document.getElementById('formPase').addEventListener('submit', function(e) {
@@ -548,7 +700,8 @@ function editarPaseModal(fecha, lugar, id, tipoMovimiento = '', numeroActa = '')
                         }
                     }
                 }
-            })
+            }
+        });
     });
     </script>
 </body>

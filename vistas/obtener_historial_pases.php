@@ -7,13 +7,9 @@ try {
         throw new Exception('ID inválido');
     }
 
-     // Conectar a la base de datos
-    $db = new PDO(
-        "mysql:host=localhost;dbname=c2810161_iniciad;charset=utf8mb4",
-        "c2810161_iniciad",
-        "li62veMAdu",
-        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-    );
+    // Conectar a la base de datos (usar base local)
+    require_once '../db/connection.php';
+    $db = $pdo;
 
     $sql = "SELECT 
                 hl.fecha_cambio,
