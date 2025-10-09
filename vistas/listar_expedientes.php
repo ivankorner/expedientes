@@ -14,7 +14,7 @@ try {
     $db = $pdo;
 
     // Configuración de paginación
-    $por_pagina = 10;
+    $por_pagina = 300;
     $pagina = isset($_GET['pagina']) ? max(1, intval($_GET['pagina'])) : 1;
     $offset = ($pagina - 1) * $por_pagina;
 
