@@ -24,9 +24,10 @@ try {
         throw new Exception("Concejal no encontrado");
     }
 
-    // Obtener historial de bloques
+    // Obtener historial de bloques (excluyendo eliminados)
     $stmt = $db->prepare("
         SELECT 
+            id,
             nombre_bloque,
             fecha_inicio,
             fecha_fin,
@@ -35,7 +36,7 @@ try {
             fecha_registro,
             DATEDIFF(COALESCE(fecha_fin, CURDATE()), fecha_inicio) as dias_en_bloque
         FROM concejal_bloques_historial 
-        WHERE concejal_id = ?
+        WHERE concejal_id = ? AND (eliminado IS NULL OR eliminado = FALSE)
         ORDER BY fecha_inicio DESC, fecha_registro DESC
     ");
     $stmt->execute([$concejal_id]);
@@ -70,6 +71,9 @@ require 'head.php';
                         <a href="listar_concejales.php" class="btn btn-secondary px-4 me-2">
                             <i class="bi bi-arrow-left"></i> Volver al Listado
                         </a>
+                        <button class="btn btn-outline-danger px-4 me-2" onclick="verEliminados(<?= $concejal_id ?>)">
+                            <i class="bi bi-trash"></i> Ver Eliminados
+                        </button>
                         <button class="btn btn-success px-4" onclick="agregarNuevoBloque()">
                             <i class="bi bi-plus-circle"></i> Agregar Nuevo Bloque
                         </button>
@@ -184,17 +188,31 @@ require 'head.php';
                                                             </span>
                                                         </div>
                                                         <div class="col-md-3 text-end">
-                                                            <?php if (!$bloque['es_actual']): ?>
+                                                            <div class="btn-group" role="group">
                                                                 <button class="btn btn-outline-primary btn-sm" 
-                                                                        onclick="editarBloque(<?= $concejal_id ?>, '<?= htmlspecialchars($bloque['nombre_bloque'], ENT_QUOTES) ?>')">
-                                                                    <i class="bi bi-pencil"></i> Editar
+                                                                        onclick="editarBloque(<?= $bloque['id'] ?>, <?= $concejal_id ?>, '<?= htmlspecialchars($bloque['nombre_bloque'], ENT_QUOTES) ?>', '<?= $bloque['fecha_inicio'] ?>', '<?= htmlspecialchars($bloque['observacion'] ?: '', ENT_QUOTES) ?>', <?= $bloque['es_actual'] ? 'true' : 'false' ?>)"
+                                                                        title="Editar bloque">
+                                                                    <i class="bi bi-pencil"></i>
                                                                 </button>
-                                                            <?php else: ?>
-                                                                <button class="btn btn-outline-warning btn-sm" 
-                                                                        onclick="cambiarBloqueActual(<?= $concejal_id ?>)">
-                                                                    <i class="bi bi-arrow-repeat"></i> Cambiar
+                                                                <?php if ($bloque['es_actual']): ?>
+                                                                    <button class="btn btn-outline-warning btn-sm" 
+                                                                            onclick="cambiarBloqueActual(<?= $concejal_id ?>)"
+                                                                            title="Cambiar bloque actual">
+                                                                        <i class="bi bi-arrow-repeat"></i>
+                                                                    </button>
+                                                                <?php else: ?>
+                                                                    <button class="btn btn-outline-success btn-sm" 
+                                                                            onclick="marcarComoActual(<?= $bloque['id'] ?>, <?= $concejal_id ?>, '<?= htmlspecialchars($bloque['nombre_bloque'], ENT_QUOTES) ?>')"
+                                                                            title="Marcar como actual">
+                                                                        <i class="bi bi-star"></i>
+                                                                    </button>
+                                                                <?php endif; ?>
+                                                                <button class="btn btn-outline-danger btn-sm" 
+                                                                        onclick="eliminarBloque(<?= $bloque['id'] ?>, <?= $concejal_id ?>, '<?= htmlspecialchars($bloque['nombre_bloque'], ENT_QUOTES) ?>', <?= $bloque['es_actual'] ? 'true' : 'false' ?>)"
+                                                                        title="Eliminar del historial">
+                                                                    <i class="bi bi-trash"></i>
                                                                 </button>
-                                                            <?php endif; ?>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                     <?php if ($bloque['observacion']): ?>
@@ -278,6 +296,24 @@ require 'head.php';
 
         .timeline-content {
             margin-left: 20px;
+        }
+
+        .btn-group .btn {
+            border-radius: 0;
+        }
+
+        .btn-group .btn:first-child {
+            border-top-left-radius: 0.375rem;
+            border-bottom-left-radius: 0.375rem;
+        }
+
+        .btn-group .btn:last-child {
+            border-top-right-radius: 0.375rem;
+            border-bottom-right-radius: 0.375rem;
+        }
+
+        .timeline-marker i {
+            font-size: 14px;
         }
     </style>
 
@@ -403,12 +439,368 @@ require 'head.php';
             });
         }
 
-        function editarBloque(concejalId, nombreBloque) {
+        function editarBloque(bloqueId, concejalId, nombreBloque, fechaInicio, observaciones, esActual) {
             Swal.fire({
-                title: 'Función en desarrollo',
-                text: `Editar bloque: ${nombreBloque}`,
-                icon: 'info',
-                confirmButtonText: 'Entendido'
+                title: 'Editar Bloque',
+                html: `
+                    <div class="text-start">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Nombre del Bloque:</label>
+                            <input type="text" id="editar_bloque" class="form-control" value="${nombreBloque}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Fecha de Inicio:</label>
+                            <input type="date" id="editar_fecha_inicio" class="form-control" value="${fechaInicio || ''}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Observaciones:</label>
+                            <textarea id="editar_observaciones" class="form-control" rows="2">${observaciones}</textarea>
+                        </div>
+                        ${!esActual ? `
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="editar_hacer_actual">
+                            <label class="form-check-label" for="editar_hacer_actual">
+                                <strong>Marcar como bloque actual</strong>
+                            </label>
+                        </div>
+                        ` : `
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> Este es el bloque actual
+                        </div>
+                        `}
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'Guardar Cambios',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#198754',
+                width: '500px',
+                preConfirm: () => {
+                    const nombre = document.getElementById('editar_bloque').value;
+                    const fecha = document.getElementById('editar_fecha_inicio').value;
+                    const obs = document.getElementById('editar_observaciones').value;
+                    const hacer_actual = !esActual && document.getElementById('editar_hacer_actual') ? document.getElementById('editar_hacer_actual').checked : false;
+
+                    if (!nombre) {
+                        Swal.showValidationMessage('El nombre del bloque es obligatorio');
+                        return false;
+                    }
+
+                    return {
+                        id: bloqueId,
+                        nombre_bloque: nombre,
+                        fecha_inicio: fecha,
+                        observaciones: obs,
+                        hacer_actual: hacer_actual
+                    };
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Mostrar indicador de carga
+                    Swal.fire({
+                        title: 'Actualizando bloque...',
+                        text: 'Por favor espere',
+                        allowOutsideClick: false,
+                        showConfirmButton: false,
+                        willOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+
+                    // Enviar datos al servidor
+                    const formData = new FormData();
+                    formData.append('accion', 'editar');
+                    formData.append('bloque_id', result.value.id);
+                    formData.append('concejal_id', concejalId);
+                    formData.append('nombre_bloque', result.value.nombre_bloque);
+                    formData.append('fecha_inicio', result.value.fecha_inicio);
+                    formData.append('observaciones', result.value.observaciones);
+                    formData.append('hacer_actual', result.value.hacer_actual);
+
+                    fetch('procesar_gestionar_bloque_historial.php', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire({
+                                title: '¡Bloque actualizado!',
+                                text: data.message,
+                                icon: 'success',
+                                confirmButtonText: 'Aceptar'
+                            }).then(() => {
+                                window.location.reload();
+                            });
+                        } else {
+                            Swal.fire({
+                                title: 'Error',
+                                text: data.message,
+                                icon: 'error',
+                                confirmButtonText: 'Entendido'
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        Swal.fire({
+                            title: 'Error de conexión',
+                            text: 'No se pudo conectar con el servidor',
+                            icon: 'error',
+                            confirmButtonText: 'Entendido'
+                        });
+                    });
+                }
+            });
+        }
+
+        function eliminarBloque(bloqueId, concejalId, nombreBloque, esActual) {
+            if (esActual) {
+                Swal.fire({
+                    title: 'No se puede eliminar',
+                    text: 'No puedes eliminar el bloque actual. Primero marca otro bloque como actual.',
+                    icon: 'warning',
+                    confirmButtonText: 'Entendido'
+                });
+                return;
+            }
+
+            Swal.fire({
+                title: '¿Eliminar del historial?',
+                html: `
+                    <p>¿Estás seguro de que deseas eliminar el bloque <strong>"${nombreBloque}"</strong> del historial?</p>
+                    <div class="text-start mt-3">
+                        <label for="motivo_eliminacion" class="form-label">Motivo de eliminación (opcional):</label>
+                        <textarea id="motivo_eliminacion" class="form-control" rows="2" placeholder="Explica por qué se elimina este registro..."></textarea>
+                    </div>
+                    <div class="alert alert-warning mt-3">
+                        <i class="bi bi-exclamation-triangle"></i> El registro se marcará como eliminado pero se conservará en la base de datos.
+                    </div>
+                `,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#dc3545',
+                width: '500px',
+                preConfirm: () => {
+                    const motivo = document.getElementById('motivo_eliminacion').value;
+                    return { motivo: motivo };
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Mostrar indicador de carga
+                    Swal.fire({
+                        title: 'Eliminando bloque...',
+                        text: 'Por favor espere',
+                        allowOutsideClick: false,
+                        showConfirmButton: false,
+                        willOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+
+                    // Enviar datos al servidor
+                    const formData = new FormData();
+                    formData.append('accion', 'eliminar');
+                    formData.append('bloque_id', bloqueId);
+                    formData.append('concejal_id', concejalId);
+                    formData.append('motivo_eliminacion', result.value.motivo);
+
+                    fetch('procesar_gestionar_bloque_historial.php', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire({
+                                title: '¡Bloque eliminado!',
+                                text: data.message,
+                                icon: 'success',
+                                confirmButtonText: 'Aceptar'
+                            }).then(() => {
+                                window.location.reload();
+                            });
+                        } else {
+                            Swal.fire({
+                                title: 'Error',
+                                text: data.message,
+                                icon: 'error',
+                                confirmButtonText: 'Entendido'
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        Swal.fire({
+                            title: 'Error de conexión',
+                            text: 'No se pudo conectar con el servidor',
+                            icon: 'error',
+                            confirmButtonText: 'Entendido'
+                        });
+                    });
+                }
+            });
+        }
+
+        function marcarComoActual(bloqueId, concejalId, nombreBloque) {
+            Swal.fire({
+                title: 'Marcar como Actual',
+                text: `¿Deseas marcar "${nombreBloque}" como el bloque actual de este concejal?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, marcar como actual',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#198754'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Mostrar indicador de carga
+                    Swal.fire({
+                        title: 'Actualizando bloque actual...',
+                        text: 'Por favor espere',
+                        allowOutsideClick: false,
+                        showConfirmButton: false,
+                        willOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+
+                    // Enviar datos al servidor
+                    const formData = new FormData();
+                    formData.append('accion', 'marcar_actual');
+                    formData.append('bloque_id', bloqueId);
+                    formData.append('concejal_id', concejalId);
+
+                    fetch('procesar_gestionar_bloque_historial.php', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire({
+                                title: '¡Bloque actualizado!',
+                                text: data.message,
+                                icon: 'success',
+                                confirmButtonText: 'Aceptar'
+                            }).then(() => {
+                                window.location.reload();
+                            });
+                        } else {
+                            Swal.fire({
+                                title: 'Error',
+                                text: data.message,
+                                icon: 'error',
+                                confirmButtonText: 'Entendido'
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        Swal.fire({
+                            title: 'Error de conexión',
+                            text: 'No se pudo conectar con el servidor',
+                            icon: 'error',
+                            confirmButtonText: 'Entendido'
+                        });
+                    });
+                }
+            });
+        }
+
+        function verEliminados(concejalId) {
+            // Mostrar indicador de carga
+            Swal.fire({
+                title: 'Cargando registros eliminados...',
+                text: 'Por favor espere',
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                willOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // Obtener registros eliminados
+            fetch(`obtener_bloques_eliminados.php?concejal_id=${concejalId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (data.eliminados.length === 0) {
+                        Swal.fire({
+                            title: 'Sin registros eliminados',
+                            text: 'No hay bloques eliminados para este concejal',
+                            icon: 'info',
+                            confirmButtonText: 'Entendido'
+                        });
+                        return;
+                    }
+
+                    let html = '<div class="text-start">';
+                    html += '<div class="alert alert-info mb-3"><i class="bi bi-info-circle"></i> Registros eliminados (solo lectura)</div>';
+                    
+                    data.eliminados.forEach(bloque => {
+                        html += `
+                            <div class="card mb-2">
+                                <div class="card-header bg-danger text-white py-2">
+                                    <h6 class="mb-0">
+                                        <i class="bi bi-building me-2"></i>
+                                        ${bloque.nombre_bloque}
+                                        <small class="opacity-75 ms-2">Eliminado: ${bloque.fecha_eliminacion}</small>
+                                    </h6>
+                                </div>
+                                <div class="card-body py-2">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <small><strong>Fecha Inicio:</strong> ${bloque.fecha_inicio || 'No especificada'}</small>
+                                        </div>
+                                        <div class="col-6">
+                                            <small><strong>Registrado:</strong> ${bloque.fecha_registro}</small>
+                                        </div>
+                                    </div>
+                                    ${bloque.motivo_eliminacion ? `
+                                        <div class="row mt-1">
+                                            <div class="col-12">
+                                                <small><strong>Motivo eliminación:</strong> <em>${bloque.motivo_eliminacion}</em></small>
+                                            </div>
+                                        </div>
+                                    ` : ''}
+                                    ${bloque.observacion ? `
+                                        <div class="row mt-1">
+                                            <div class="col-12">
+                                                <small><strong>Observaciones:</strong> <em>${bloque.observacion}</em></small>
+                                            </div>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    html += '</div>';
+
+                    Swal.fire({
+                        title: `Registros Eliminados (${data.eliminados.length})`,
+                        html: html,
+                        width: '700px',
+                        confirmButtonText: 'Cerrar',
+                        customClass: {
+                            htmlContainer: 'text-start'
+                        }
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Error',
+                        text: data.message,
+                        icon: 'error',
+                        confirmButtonText: 'Entendido'
+                    });
+                }
+            })
+            .catch(error => {
+                Swal.fire({
+                    title: 'Error de conexión',
+                    text: 'No se pudo obtener los registros eliminados',
+                    icon: 'error',
+                    confirmButtonText: 'Entendido'
+                });
             });
         }
     </script>
