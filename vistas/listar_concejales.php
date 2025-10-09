@@ -136,6 +136,11 @@ try {
                                                 onclick="verDetalles(<?= $concejal['id'] ?>)">
                                             <i class="bi bi-eye"></i>
                                         </button>
+                                        <a href="historial_bloques_concejal.php?id=<?= $concejal['id'] ?>" 
+                                           class="btn btn-sm btn-outline-success" 
+                                           title="Ver historial de bloques">
+                                            <i class="bi bi-clock-history"></i>
+                                        </a>
                                         <a href="editar_concejal.php?id=<?= $concejal['id'] ?>" 
                                            class="btn btn-sm btn-outline-primary">
                                             <i class="bi bi-pencil"></i>
