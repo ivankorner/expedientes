@@ -1,8 +1,6 @@
 <?php
 session_start();
 
-define('MAX_EXTRACTO', 300);
-
 // Agregar al inicio del archivo, después de session_start()
 error_log('ID recibido: ' . print_r($_GET, true));
 
@@ -315,7 +313,7 @@ input[readonly] {
                                           name="extracto" 
                                           class="form-control" 
                                           rows="3"><?= htmlspecialchars($expediente['extracto'] ?? '') ?></textarea>
-                                <div class="form-text">Máximo <?= MAX_EXTRACTO ?> caracteres (opcional)</div>
+                                <div class="form-text">Sin límite de caracteres (opcional)</div>
                             </div>
 
                             <!-- Iniciador -->
@@ -409,24 +407,22 @@ input[readonly] {
     <script>
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.querySelector('form');
-    const MAX_EXTRACTO = 300;
+    const extracto = document.getElementById('extracto');
 
-    // Solo validar el extracto si tiene contenido
+    // Contador de caracteres sin límite
+    if (extracto) {
+        extracto.addEventListener('input', function() {
+            const caracteresActuales = this.value.length;
+            const formText = this.nextElementSibling;
+            if (formText) {
+                formText.textContent = `Caracteres: ${caracteresActuales} (sin límite)`;
+            }
+        });
+    }
+
+    // Validación del formulario (sin límite de extracto)
     form.addEventListener('submit', function(e) {
         e.preventDefault();
-
-        const extractoValue = extracto.value.trim();
-        if (extractoValue && extractoValue.length > MAX_EXTRACTO) {
-            extracto.classList.add('is-invalid');
-            Swal.fire({
-                title: 'Error en el extracto',
-                text: `El extracto no puede superar los ${MAX_EXTRACTO} caracteres`,
-                icon: 'warning',
-                confirmButtonText: 'Entendido',
-                confirmButtonColor: '#0d6efd'
-            });
-            return;
-        }
 
         // Confirmar envío
         Swal.fire({

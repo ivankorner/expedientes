@@ -203,11 +203,10 @@ try {
                                 <textarea id="extracto" 
                                           name="extracto" 
                                           class="form-control" 
-                                          maxlength="500" 
                                           rows="3" 
-                                          placeholder="Ingrese un extracto (máximo 500 caracteres)"
+                                          placeholder="Ingrese un extracto"
                                           required></textarea>
-                                <div class="form-text">Máximo 500 caracteres.</div>
+                                <div class="form-text">Sin límite de caracteres.</div>
                                 <div class="invalid-feedback">Por favor ingrese un extracto</div>
                             </div>
 
@@ -1003,17 +1002,13 @@ document.addEventListener('DOMContentLoaded', function() {
         this.value = this.value.toUpperCase();
     });
 
-    // Validar extracto
+    // Validar extracto (sin límite de caracteres)
     const extracto = document.getElementById('extracto');
-    const MAX_EXTRACTO = 300;
     
     extracto.addEventListener('input', function() {
-        const remaining = MAX_EXTRACTO - this.value.length;
-        this.nextElementSibling.textContent = `Caracteres restantes: ${remaining}`;
-        
-        if (this.value.length > MAX_EXTRACTO) {
-            this.value = this.value.substring(0, MAX_EXTRACTO);
-        }
+        // Mostrar contador de caracteres sin límite
+        const caracteresActuales = this.value.length;
+        this.nextElementSibling.textContent = `Caracteres: ${caracteresActuales}`;
     });
 });
 </script>
