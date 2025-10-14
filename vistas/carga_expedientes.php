@@ -24,21 +24,98 @@ try {
                         ORDER BY razon_social");
     $personas_juridicas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Consultar concejales
-    $stmt = $db->query("SELECT id, CONCAT(apellido, ', ', nombre, ' - ', bloque) as nombre_completo 
-                        FROM concejales 
-                        ORDER BY apellido, nombre");
+    // Consultar concejales con su historial de bloques
+    $stmt = $db->query("
+        SELECT c.id, 
+               c.apellido, 
+               c.nombre, 
+               c.bloque as bloque_actual,
+               CONCAT(c.apellido, ', ', c.nombre) as nombre_completo
+        FROM concejales c 
+        ORDER BY c.apellido, c.nombre
+    ");
     $concejales = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Obtener historial de bloques para cada concejal
+    foreach ($concejales as &$concejal) {
+        try {
+            // Verificar si la tabla de historial existe
+            $stmt = $db->prepare("SHOW TABLES LIKE 'concejal_bloques_historial'");
+            $stmt->execute();
+            $tabla_existe = $stmt->rowCount() > 0;
+            
+            if ($tabla_existe) {
+                $stmt = $db->prepare("
+                    SELECT nombre_bloque, es_actual, fecha_inicio, fecha_fin
+                    FROM concejal_bloques_historial 
+                    WHERE concejal_id = ? AND (eliminado IS NULL OR eliminado = FALSE)
+                    ORDER BY es_actual DESC, fecha_inicio DESC
+                ");
+                $stmt->execute([$concejal['id']]);
+                $bloques = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            } else {
+                $bloques = [];
+            }
+            
+            // Si no hay historial, usar el bloque actual
+            if (empty($bloques) && $concejal['bloque_actual']) {
+                $bloques = [[
+                    'nombre_bloque' => $concejal['bloque_actual'],
+                    'es_actual' => true,
+                    'fecha_inicio' => null,
+                    'fecha_fin' => null
+                ]];
+            }
+            
+            $concejal['bloques'] = $bloques;
+        } catch (Exception $e) {
+            // En caso de error, usar solo el bloque actual
+            $concejal['bloques'] = [[
+                'nombre_bloque' => $concejal['bloque_actual'],
+                'es_actual' => true,
+                'fecha_inicio' => null,
+                'fecha_fin' => null
+            ]];
+        }
+    }
 
 } catch (PDOException $e) {
     $_SESSION['mensaje'] = "Error al cargar iniciadores: " . $e->getMessage();
     $_SESSION['tipo_mensaje'] = "danger";
 }
 
-// Remover los var_dump de debug
-// var_dump($personas_fisicas);
-// var_dump($personas_juridicas);
-// var_dump($concejales);
+// Debug temporal para verificar datos
+if (isset($_GET['debug']) && $_GET['debug'] == '1') {
+    echo "<div style='background: #f8f9fa; padding: 20px; margin: 10px; border: 1px solid #dee2e6; border-radius: 5px;'>";
+    echo "<h4>🔍 Debug - Estado de Concejales y Bloques</h4>";
+    echo "<p><strong>Total concejales encontrados:</strong> " . count($concejales) . "</p>";
+    
+    if (!empty($concejales)) {
+        echo "<details><summary>Ver detalles de concejales (clic para expandir)</summary>";
+        foreach ($concejales as $index => $concejal) {
+            echo "<div style='background: white; padding: 10px; margin: 5px 0; border-left: 4px solid #007bff;'>";
+            echo "<strong>#{$index}: " . htmlspecialchars($concejal['nombre_completo']) . "</strong><br>";
+            echo "ID: {$concejal['id']}, Bloque actual: " . htmlspecialchars($concejal['bloque_actual']) . "<br>";
+            echo "Bloques disponibles: " . count($concejal['bloques']) . "<br>";
+            
+            if (!empty($concejal['bloques'])) {
+                echo "<ul style='margin: 5px 0 0 20px;'>";
+                foreach ($concejal['bloques'] as $bloque) {
+                    echo "<li>" . htmlspecialchars($bloque['nombre_bloque']) . " - " . ($bloque['es_actual'] ? '🟢 ACTUAL' : '🔘 HISTÓRICO') . "</li>";
+                }
+                echo "</ul>";
+            } else {
+                echo "<span style='color: orange;'>⚠️ Sin bloques</span>";
+            }
+            echo "</div>";
+        }
+        echo "</details>";
+    }
+    
+    echo "<p><a href='setup_bloques.php' style='background: #dc3545; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px;'>🔧 Ejecutar Setup</a></p>";
+    echo "<p><a href='?debug=0' style='background: #6c757d; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px;'>❌ Ocultar Debug</a></p>";
+    echo "</div>";
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -280,7 +357,9 @@ try {
                                             </div>
                                         </div>
 
-                                        <!-- Campo oculto para el valor -->
+                                        <!-- Campos ocultos para los valores -->
+                                        <!-- Campo adicional para almacenar el bloque seleccionado del concejal -->
+                                        <input type="hidden" id="bloque_concejal_seleccionado" name="bloque_concejal_seleccionado" value="">
                                         <select id="iniciador" name="iniciador" class="d-none" required>
                                             <option value="">Seleccione un iniciador...</option>
                                             <?php if (!empty($personas_fisicas)): ?>
@@ -315,8 +394,11 @@ try {
                                                         <option value="CO-<?= $concejal['id'] ?>" 
                                                                 data-nombre="<?= htmlspecialchars($concejal['nombre_completo']) ?>"
                                                                 data-tipo="Concejal"
-                                                                data-search="<?= strtolower(htmlspecialchars($concejal['nombre_completo'])) ?>">
-                                                            <?= htmlspecialchars($concejal['nombre_completo']) ?>
+                                                                data-search="<?= strtolower(htmlspecialchars($concejal['nombre_completo'] . ' ' . $concejal['bloque_actual'])) ?>"
+                                                                data-concejal-id="<?= $concejal['id'] ?>"
+                                                                data-bloques='<?= htmlspecialchars(json_encode($concejal['bloques']), ENT_QUOTES) ?>'
+                                                                data-bloque-actual="<?= htmlspecialchars($concejal['bloque_actual']) ?>">
+                                                            <?= htmlspecialchars($concejal['nombre_completo']) ?> - <?= htmlspecialchars($concejal['bloque_actual']) ?>
                                                         </option>
                                                     <?php endforeach; ?>
                                                 </optgroup>
@@ -333,6 +415,7 @@ try {
                                                         <li><strong>Por nombre:</strong> "Juan", "María", "González"</li>
                                                         <li><strong>Por documento:</strong> "12345678", "20-12345678-9"</li>
                                                         <li><strong>Por bloque:</strong> "Frente", "Partido", "Bloque"</li>
+                                                        <li><strong>Para concejales:</strong> Si tienen múltiples bloques, podrá elegir entre sus bloques actual e históricos</li>
                                                     </ul>
                                                     <p class="mb-0 mt-2">
                                                         <small class="text-muted">
@@ -672,6 +755,376 @@ try {
             animation: spin 1s linear infinite;
         }
         
+        /* ===== NUEVA INTERFAZ TIMELINE PARA BLOQUES DE CONCEJALES ===== */
+        
+        /* Header del concejal */
+        .concejal-header {
+            text-align: center;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #f8fff9 0%, #f0fff4 100%);
+            border-radius: 15px;
+            border: 2px solid rgba(25, 135, 84, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .concejal-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(25, 135, 84, 0.05) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+        
+        .concejal-avatar {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #198754 0%, #20c997 100%);
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            color: white;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 12px rgba(25, 135, 84, 0.3);
+            position: relative;
+            z-index: 2;
+        }
+        
+        .concejal-nombre {
+            color: #2c3e50;
+            font-weight: 700;
+            font-size: 1.4rem;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .concejal-subtitulo {
+            font-size: 1rem;
+            font-weight: 500;
+            position: relative;
+            z-index: 2;
+        }
+        
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Instrucciones del timeline */
+        .timeline-instructions .alert {
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(13, 110, 253, 0.1);
+        }
+        
+        .bg-gradient {
+            background: linear-gradient(135deg, rgba(13, 110, 253, 0.1) 0%, rgba(108, 117, 125, 0.05) 100%) !important;
+        }
+        
+        /* Contenedor principal del timeline */
+        .timeline-container {
+            position: relative;
+            padding: 1rem 0;
+        }
+        
+        /* Items del timeline */
+        .timeline-item {
+            position: relative;
+            display: flex;
+            margin-bottom: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .timeline-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        /* Marcadores del timeline */
+        .timeline-marker {
+            position: relative;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            margin-right: 1rem;
+            z-index: 2;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .marker-actual {
+            background: linear-gradient(135deg, #198754 0%, #20c997 100%);
+            color: white;
+            border: 3px solid #ffffff;
+            box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.2);
+        }
+        
+        .marker-historico {
+            background: linear-gradient(135deg, #6c757d 0%, #adb5bd 100%);
+            color: white;
+            border: 3px solid #ffffff;
+            box-shadow: 0 0 0 3px rgba(108, 117, 125, 0.2);
+        }
+        
+        /* Contenido del timeline */
+        .timeline-content {
+            flex-grow: 1;
+            position: relative;
+        }
+        
+        /* Tarjetas del timeline */
+        .timeline-card {
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .card-actual {
+            background: linear-gradient(135deg, #f8fff9 0%, #f0fff4 100%);
+            border-color: rgba(25, 135, 84, 0.2);
+        }
+        
+        .card-historico {
+            background: linear-gradient(135deg, #f8f9fa 0%, #f1f3f4 100%);
+            border-color: rgba(108, 117, 125, 0.2);
+        }
+        
+        /* Header personalizado de las tarjetas */
+        .card-header-custom {
+            padding: 1rem 1.25rem 0.75rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        .bloque-titulo {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 0.25rem;
+        }
+        
+        .bloque-estado {
+            margin-bottom: 0.5rem;
+        }
+        
+        /* Body personalizado de las tarjetas */
+        .card-body-custom {
+            padding: 0.75rem 1.25rem 1rem;
+        }
+        
+        /* Badges personalizados */
+        .badge-actual {
+            background: linear-gradient(135deg, #198754 0%, #20c997 100%);
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .badge-historico {
+            background: linear-gradient(135deg, #6c757d 0%, #adb5bd 100%);
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        /* Botones de selección */
+        .btn-seleccionar {
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            border: none;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .btn-actual {
+            background: linear-gradient(135deg, #198754 0%, #20c997 100%);
+            color: white;
+            box-shadow: 0 2px 8px rgba(25, 135, 84, 0.3);
+        }
+        
+        .btn-actual:hover {
+            background: linear-gradient(135deg, #146c43 0%, #1ba085 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(25, 135, 84, 0.4);
+        }
+        
+        .btn-historico {
+            background: linear-gradient(135deg, #6c757d 0%, #adb5bd 100%);
+            color: white;
+            box-shadow: 0 2px 8px rgba(108, 117, 125, 0.3);
+        }
+        
+        .btn-historico:hover {
+            background: linear-gradient(135deg, #495057 0%, #868e96 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
+        }
+        
+        /* Información del timeline */
+        .timeline-info {
+            margin-top: 0.5rem;
+        }
+        
+        .info-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            color: #495057;
+        }
+        
+        .info-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .periodo-texto {
+            font-weight: 500;
+            color: #2c3e50;
+        }
+        
+        .duracion-texto {
+            font-weight: 500;
+            color: #6c757d;
+        }
+        
+        /* Alertas mini */
+        .alert-mini {
+            padding: 0.5rem 0.75rem;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            margin: 0;
+            border: 1px solid transparent;
+        }
+        
+        .alert-mini.alert-success {
+            background: rgba(25, 135, 84, 0.1);
+            color: #0f5132;
+            border-color: rgba(25, 135, 84, 0.2);
+        }
+        
+        .alert-mini.alert-secondary {
+            background: rgba(108, 117, 125, 0.1);
+            color: #41464b;
+            border-color: rgba(108, 117, 125, 0.2);
+        }
+        
+        /* Conectores del timeline */
+        .timeline-connector {
+            position: absolute;
+            left: 19px;
+            top: 40px;
+            width: 2px;
+            height: calc(100% - 20px);
+            background: linear-gradient(180deg, rgba(108, 117, 125, 0.3) 0%, rgba(108, 117, 125, 0.1) 100%);
+            z-index: 1;
+        }
+        
+        /* Estados hover */
+        .timeline-item.timeline-hover .timeline-card {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .timeline-item.timeline-hover .marker-actual {
+            transform: scale(1.1);
+            box-shadow: 0 0 0 5px rgba(25, 135, 84, 0.3);
+        }
+        
+        .timeline-item.timeline-hover .marker-historico {
+            transform: scale(1.1);
+            box-shadow: 0 0 0 5px rgba(108, 117, 125, 0.3);
+        }
+        
+        .timeline-item.timeline-hover .card-actual {
+            border-color: rgba(25, 135, 84, 0.4);
+            background: linear-gradient(135deg, #f0fff4 0%, #e8f8ed 100%);
+        }
+        
+        .timeline-item.timeline-hover .card-historico {
+            border-color: rgba(108, 117, 125, 0.4);
+            background: linear-gradient(135deg, #f1f3f4 0%, #e9ecef 100%);
+        }
+        
+        /* Efectos de selección activa */
+        .timeline-item:active .timeline-card {
+            transform: scale(0.98);
+        }
+        
+        /* Animaciones de entrada */
+        .timeline-item {
+            animation: timelineSlideIn 0.5s ease-out forwards;
+            opacity: 0;
+            transform: translateX(-20px);
+        }
+        
+        .timeline-item:nth-child(1) { animation-delay: 0.1s; }
+        .timeline-item:nth-child(2) { animation-delay: 0.2s; }
+        .timeline-item:nth-child(3) { animation-delay: 0.3s; }
+        .timeline-item:nth-child(4) { animation-delay: 0.4s; }
+        .timeline-item:nth-child(5) { animation-delay: 0.5s; }
+        
+        @keyframes timelineSlideIn {
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        /* Responsividad */
+        @media (max-width: 768px) {
+            .timeline-marker {
+                width: 35px;
+                height: 35px;
+                font-size: 1rem;
+                margin-right: 0.75rem;
+            }
+            
+            .card-header-custom, .card-body-custom {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+            
+            .bloque-titulo {
+                font-size: 1rem;
+            }
+            
+            .btn-seleccionar {
+                padding: 0.4rem 0.8rem;
+                font-size: 0.8rem;
+            }
+            
+            .timeline-connector {
+                left: 17px;
+            }
+        }
+        
+        .concejal-item {
+            border-left: 4px solid #198754;
+        }
+        
+        .concejal-item:hover {
+            border-left-color: #146c43;
+        }
+        
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -703,6 +1156,127 @@ try {
         .shadow-sm {
             box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.075) !important;
         }
+        
+        /* ===== ESTILOS PARA SWEETALERT DE BLOQUES ===== */
+        
+        /* Contenedor del SweetAlert */
+        .swal-bloques-container {
+            z-index: 10000;
+        }
+        
+        /* Popup del SweetAlert */
+        .swal-bloques-popup {
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Contenido HTML del SweetAlert */
+        .swal-bloques-content {
+            padding: 0;
+        }
+        
+        /* Badges personalizados para el SweetAlert */
+        .badge-success {
+            background: linear-gradient(135deg, #198754 0%, #20c997 100%);
+            color: white;
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 0.3rem 0.6rem;
+            border-radius: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .badge-secondary {
+            background: linear-gradient(135deg, #6c757d 0%, #adb5bd 100%);
+            color: white;
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 0.3rem 0.6rem;
+            border-radius: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        /* Opciones de bloques en el SweetAlert */
+        .bloque-option {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .bloque-option:hover {
+            transform: translateY(-3px) !important;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15) !important;
+        }
+        
+        .bloque-option:active {
+            transform: translateY(-1px) scale(0.98) !important;
+        }
+        
+        /* Efectos de selección en SweetAlert */
+        .bloque-option h6 {
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        
+        .bloque-option .text-muted {
+            color: #6c757d !important;
+        }
+        
+        .bloque-option .text-muted strong {
+            color: #495057;
+        }
+        
+        /* Scrollbar personalizado para las opciones */
+        .swal-bloques-content div::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .swal-bloques-content div::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        
+        .swal-bloques-content div::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #198754 0%, #20c997 100%);
+            border-radius: 10px;
+        }
+        
+        .swal-bloques-content div::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #146c43 0%, #1ba085 100%);
+        }
+
+        /* Indicador visual del sistema listo */
+        .sistema-listo {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 9999;
+            background: linear-gradient(135deg, #198754 0%, #20c997 100%);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(25, 135, 84, 0.3);
+            animation: fadeInBounce 1s ease-out;
+        }
+        
+        @keyframes fadeInBounce {
+            0% { opacity: 0; transform: translateY(-20px) scale(0.8); }
+            60% { opacity: 1; transform: translateY(5px) scale(1.05); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        
+        .concejal-item-debug {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%) !important;
+            border-left: 5px solid #ffc107 !important;
+        }
+        
+        .concejal-item-debug:hover {
+            background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%) !important;
+            transform: translateX(8px) !important;
+        }
     </style>
     <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -730,6 +1304,14 @@ try {
             }));
 
         console.log('Iniciadores cargados:', todasLasOpciones.length);
+
+        // Verificar que SweetAlert esté disponible
+        console.log('🍭 SweetAlert disponible:', typeof Swal !== 'undefined');
+        if (typeof Swal !== 'undefined') {
+            console.log('✅ SweetAlert2 cargado correctamente');
+        } else {
+            console.error('❌ SweetAlert2 NO está disponible');
+        }
 
         // Función para buscar iniciadores
         function buscarIniciadores(termino) {
@@ -762,33 +1344,77 @@ try {
                     const iconoTipo = obtenerIconoTipo(resultado.tipo);
                     const colorTipo = obtenerColorTipo(resultado.tipo);
                     
-                    return `
-                        <div class="resultado-item" data-value="${resultado.value}" data-nombre="${resultado.nombre}" data-tipo="${resultado.tipo}">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div class="flex-grow-1">
-                                    <div class="fw-bold">${nombreResaltado}</div>
-                                    <small class="text-muted">
-                                        <i class="${iconoTipo} me-1"></i>
-                                        ${resultado.tipo}
-                                    </small>
+                    // Si es un concejal, agregar información de bloques
+                    if (resultado.tipo === 'Concejal' && resultado.element.dataset.bloques) {
+                        const bloques = JSON.parse(resultado.element.dataset.bloques);
+                        const concejalId = resultado.element.dataset.concejalId;
+                        
+                        // Debug: verificar datos del concejal
+                        console.log('🏛️ DEBUG Concejal encontrado:', {
+                            nombre: resultado.nombre,
+                            concejalId: concejalId,
+                            totalBloques: bloques.length,
+                            bloques: bloques.map(b => `${b.nombre_bloque} (${b.es_actual ? 'ACTUAL' : 'HISTÓRICO'})`)
+                        });
+                        
+                        return `
+                            <div class="resultado-item concejal-item ${bloques.length > 1 ? 'concejal-item-debug' : ''}" data-value="${resultado.value}" data-nombre="${resultado.nombre}" data-tipo="${resultado.tipo}" data-concejal-id="${concejalId}">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="flex-grow-1">
+                                        <div class="fw-bold">${nombreResaltado}</div>
+                                        <small class="text-muted">
+                                            <i class="${iconoTipo} me-1"></i>
+                                            ${resultado.tipo} - ${bloques.length} bloque${bloques.length !== 1 ? 's' : ''} disponible${bloques.length !== 1 ? 's' : ''}
+                                            ${bloques.length > 1 ? ' - 🎯 CLIC PARA ELEGIR' : ''}
+                                        </small>
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        <span class="tipo-badge bg-${colorTipo} text-white me-2">
+                                            ${resultado.tipo}
+                                        </span>
+                                        ${bloques.length > 1 ? '<span class="badge bg-warning text-dark me-2">⚡ Multi-Bloque</span>' : ''}
+                                        <i class="bi bi-chevron-right text-muted"></i>
+                                    </div>
                                 </div>
-                                <span class="tipo-badge bg-${colorTipo} text-white">
-                                    ${resultado.tipo}
-                                </span>
                             </div>
-                        </div>
-                    `;
+                        `;
+                    } else {
+                        return `
+                            <div class="resultado-item" data-value="${resultado.value}" data-nombre="${resultado.nombre}" data-tipo="${resultado.tipo}">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="flex-grow-1">
+                                        <div class="fw-bold">${nombreResaltado}</div>
+                                        <small class="text-muted">
+                                            <i class="${iconoTipo} me-1"></i>
+                                            ${resultado.tipo}
+                                        </small>
+                                    </div>
+                                    <span class="tipo-badge bg-${colorTipo} text-white">
+                                        ${resultado.tipo}
+                                    </span>
+                                </div>
+                            </div>
+                        `;
+                    }
                 }).join('');
 
                 // Agregar eventos de clic a los resultados
                 document.querySelectorAll('.resultado-item').forEach(item => {
-                    item.addEventListener('click', function() {
-                        seleccionarIniciador(
-                            this.dataset.value,
-                            this.dataset.nombre,
-                            this.dataset.tipo
-                        );
-                    });
+                    if (item.classList.contains('concejal-item')) {
+                        item.addEventListener('click', function() {
+                            console.log('🖱️ CLICK EN CONCEJAL DETECTADO:', this.dataset.nombre);
+                            console.log('📊 Datos del elemento:', this.dataset);
+                            mostrarBloquesDelConcejal(this);
+                        });
+                    } else {
+                        item.addEventListener('click', function() {
+                            seleccionarIniciador(
+                                this.dataset.value,
+                                this.dataset.nombre,
+                                this.dataset.tipo
+                            );
+                        });
+                    }
                 });
             }
 
@@ -808,6 +1434,8 @@ try {
                 case 'Persona Física': return 'bi bi-person-fill';
                 case 'Persona Jurídica': return 'bi bi-building-fill';
                 case 'Concejal': return 'bi bi-person-badge-fill';
+                case 'Concejal (Bloque Actual)': return 'bi bi-star-fill';
+                case 'Concejal (Bloque Histórico)': return 'bi bi-clock-history';
                 default: return 'bi bi-person';
             }
         }
@@ -820,6 +1448,235 @@ try {
                 case 'Concejal': return 'success';
                 default: return 'secondary';
             }
+        }
+
+        // Función para mostrar bloques del concejal
+        function mostrarBloquesDelConcejal(concejalElement) {
+            console.log('🚀 INICIANDO mostrarBloquesDelConcejal');
+            
+            const concejalId = concejalElement.dataset.concejalId;
+            const nombreConcejal = concejalElement.dataset.nombre;
+            const opcionConcejal = Array.from(selectIniciador.options).find(opt => 
+                opt.dataset.concejalId === concejalId
+            );
+            
+            // Debug: mostrar información detallada
+            console.log('🔍 DEBUG mostrarBloquesDelConcejal:', {
+                concejalId: concejalId,
+                nombreConcejal: nombreConcejal,
+                opcionEncontrada: !!opcionConcejal,
+                tieneDataBloques: opcionConcejal ? !!opcionConcejal.dataset.bloques : false,
+                dataBloques: opcionConcejal ? opcionConcejal.dataset.bloques : 'No disponible'
+            });
+            
+            // Continuar directamente con el procesamiento
+            procesarBloquesDelConcejal(concejalId, nombreConcejal, opcionConcejal);
+        }
+        
+        // Función separada para procesar bloques después de la confirmación
+        function procesarBloquesDelConcejal(concejalId, nombreConcejal, opcionConcejal) {
+            if (!opcionConcejal) {
+                console.error('❌ No se encontró la opción del concejal con ID:', concejalId);
+                Swal.fire({
+                    title: 'Error',
+                    text: `No se pudo encontrar la información del concejal con ID: ${concejalId}`,
+                    icon: 'error',
+                    confirmButtonText: 'Entendido',
+                    confirmButtonColor: '#dc3545'
+                });
+                return;
+            }
+            
+            if (!opcionConcejal.dataset.bloques) {
+                console.error('❌ No hay datos de bloques para el concejal:', nombreConcejal);
+                Swal.fire({
+                    title: 'Sin bloques disponibles',
+                    text: `El concejal ${nombreConcejal} no tiene bloques configurados.`,
+                    icon: 'warning',
+                    confirmButtonText: 'Entendido',
+                    confirmButtonColor: '#ffc107'
+                });
+                return;
+            }
+            
+            let bloques;
+            try {
+                bloques = JSON.parse(opcionConcejal.dataset.bloques);
+                console.log('✅ Bloques parseados correctamente:', bloques);
+            } catch (error) {
+                console.error('❌ Error al parsear bloques:', error, opcionConcejal.dataset.bloques);
+                Swal.fire({
+                    title: 'Error en datos de bloques',
+                    text: `Error al procesar los bloques del concejal ${nombreConcejal}`,
+                    icon: 'error',
+                    confirmButtonText: 'Entendido',
+                    confirmButtonColor: '#dc3545'
+                });
+                return;
+            }
+            
+            // Si solo tiene un bloque, seleccionarlo directamente
+            if (bloques.length === 1) {
+                const bloque = bloques[0];
+                seleccionarConcejalConBloque(concejalId, nombreConcejal, bloque.nombre_bloque, bloque.es_actual);
+                return;
+            }
+            
+            // Si tiene múltiples bloques, mostrar SweetAlert con opciones
+            mostrarSweetAlertBloques(concejalId, nombreConcejal, bloques);
+        }
+        
+        // Función para mostrar SweetAlert con selección de bloques
+        function mostrarSweetAlertBloques(concejalId, nombreConcejal, bloques) {
+            console.log('🎯 EJECUTANDO mostrarSweetAlertBloques:', {
+                concejalId, nombreConcejal, totalBloques: bloques.length
+            });
+            // Ordenar bloques: actuales primero, luego históricos por fecha
+            bloques.sort((a, b) => {
+                if (a.es_actual && !b.es_actual) return -1;
+                if (!a.es_actual && b.es_actual) return 1;
+                if (a.fecha_inicio && b.fecha_inicio) {
+                    return new Date(b.fecha_inicio) - new Date(a.fecha_inicio);
+                }
+                return 0;
+            });
+            
+            // Crear HTML para las opciones
+            let opcionesHTML = '';
+            bloques.forEach((bloque, index) => {
+                const esActual = bloque.es_actual;
+                const fechaInicio = bloque.fecha_inicio ? new Date(bloque.fecha_inicio).toLocaleDateString('es-ES') : 'Sin fecha';
+                const fechaFin = bloque.fecha_fin ? new Date(bloque.fecha_fin).toLocaleDateString('es-ES') : (esActual ? 'Actualidad' : 'Sin fecha fin');
+                
+                // Calcular duración si hay fechas
+                let duracion = '';
+                if (bloque.fecha_inicio) {
+                    const inicio = new Date(bloque.fecha_inicio);
+                    const fin = bloque.fecha_fin ? new Date(bloque.fecha_fin) : new Date();
+                    const diffTime = Math.abs(fin - inicio);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    const years = Math.floor(diffDays / 365);
+                    const months = Math.floor((diffDays % 365) / 30);
+                    
+                    if (years > 0) {
+                        duracion = `${years} año${years !== 1 ? 's' : ''}`;
+                        if (months > 0) duracion += ` y ${months} mes${months !== 1 ? 'es' : ''}`;
+                    } else if (months > 0) {
+                        duracion = `${months} mes${months !== 1 ? 'es' : ''}`;
+                    } else {
+                        duracion = `${diffDays} día${diffDays !== 1 ? 's' : ''}`;
+                    }
+                }
+                
+                const badgeClass = esActual ? 'badge-success' : 'badge-secondary';
+                const badgeText = esActual ? 'ACTUAL' : 'HISTÓRICO';
+                const iconClass = esActual ? 'bi-star-fill' : 'bi-clock-history';
+                
+                opcionesHTML += `
+                    <div class="bloque-option mb-3 p-3 border rounded cursor-pointer" 
+                         data-concejal-id="${concejalId}" 
+                         data-bloque="${bloque.nombre_bloque}" 
+                         data-es-actual="${esActual}"
+                         style="border: 2px solid ${esActual ? '#198754' : '#6c757d'}; 
+                                background: ${esActual ? 'linear-gradient(135deg, #f8fff9 0%, #f0fff4 100%)' : 'linear-gradient(135deg, #f8f9fa 0%, #f1f3f4 100%)'};
+                                cursor: pointer; 
+                                transition: all 0.2s ease;">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="bi ${iconClass} me-2 text-${esActual ? 'success' : 'secondary'}"></i>
+                                    <h6 class="mb-0 fw-bold">${bloque.nombre_bloque}</h6>
+                                    <span class="badge ${badgeClass} ms-2">${badgeText}</span>
+                                </div>
+                                <div class="text-muted small">
+                                    <div class="d-flex align-items-center mb-1">
+                                        <i class="bi bi-calendar-event me-1"></i>
+                                        <strong>Período:</strong>&nbsp;
+                                        <span>${fechaInicio} ${fechaFin !== 'Sin fecha fin' ? '→ ' + fechaFin : ''}</span>
+                                    </div>
+                                    ${duracion ? `
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-hourglass-split me-1"></i>
+                                        <strong>Duración:</strong>&nbsp;
+                                        <span>${duracion}</span>
+                                    </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <i class="bi bi-chevron-right text-muted fs-5"></i>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            Swal.fire({
+                title: `<div style="display: flex; align-items: center; gap: 10px;">
+                            <i class="bi bi-person-badge-fill" style="color: #198754; font-size: 1.5rem;"></i>
+                            <span>${nombreConcejal}</span>
+                        </div>`,
+                html: `
+                    <div class="text-start">
+                        <p class="mb-3 text-muted">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Seleccione el bloque político con el que iniciará el expediente:
+                        </p>
+                        <div style="max-height: 400px; overflow-y: auto;">
+                            ${opcionesHTML}
+                        </div>
+                    </div>
+                `,
+                showCancelButton: true,
+                showConfirmButton: false,
+                cancelButtonText: 'Cancelar',
+                cancelButtonColor: '#6c757d',
+                width: '600px',
+                customClass: {
+                    container: 'swal-bloques-container',
+                    popup: 'swal-bloques-popup',
+                    htmlContainer: 'swal-bloques-content'
+                },
+                didOpen: () => {
+                    // Agregar eventos de clic a las opciones
+                    document.querySelectorAll('.bloque-option').forEach(option => {
+                        option.addEventListener('click', function() {
+                            const concejalId = this.dataset.concejalId;
+                            const nombreBloque = this.dataset.bloque;
+                            const esActual = this.dataset.esActual === 'true';
+                            
+                            // Cerrar el SweetAlert
+                            Swal.close();
+                            
+                            // Seleccionar el bloque
+                            seleccionarConcejalConBloque(concejalId, nombreConcejal, nombreBloque, esActual);
+                        });
+                        
+                        // Efectos hover
+                        option.addEventListener('mouseenter', function() {
+                            this.style.transform = 'translateY(-2px)';
+                            this.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                        });
+                        
+                        option.addEventListener('mouseleave', function() {
+                            this.style.transform = 'translateY(0)';
+                            this.style.boxShadow = 'none';
+                        });
+                    });
+                }
+            });
+        }
+        
+        // Función para seleccionar concejal con bloque específico  
+        function seleccionarConcejalConBloque(concejalId, nombreConcejal, nombreBloque, esActual) {
+            const value = `CO-${concejalId}`;
+            const nombreCompleto = `${nombreConcejal} - ${nombreBloque}`;
+            const tipo = `Concejal${esActual ? ' (Bloque Actual)' : ' (Bloque Histórico)'}`;
+            
+            // Guardar el bloque seleccionado
+            document.getElementById('bloque_concejal_seleccionado').value = nombreBloque;
+            
+            seleccionarIniciador(value, nombreCompleto, tipo);
         }
 
         // Función para seleccionar iniciador
@@ -863,6 +1720,7 @@ try {
         // Función para limpiar selección
         function limpiarSeleccion() {
             selectIniciador.value = '';
+            document.getElementById('bloque_concejal_seleccionado').value = '';
             iniciadorSeleccionado.style.display = 'none';
             mensajeAyuda.style.display = 'block';
             buscarIniciador.value = '';
@@ -943,6 +1801,47 @@ try {
         setTimeout(() => {
             buscarIniciador.focus();
         }, 500);
+
+        // PRUEBA IMMEDIATA DE SWEETALERT - REMOVER DESPUÉS
+        setTimeout(() => {
+            if (typeof Swal !== 'undefined') {
+                console.log('🎉 SWEETALERT FUNCIONANDO - Mostrando indicadores');
+                
+                // Crear indicador visual en la página
+                const indicator = document.createElement('div');
+                indicator.className = 'sistema-listo';
+                indicator.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i>Sistema SweetAlert Listo';
+                document.body.appendChild(indicator);
+                
+                // Remover después de 5 segundos
+                setTimeout(() => {
+                    if (indicator.parentNode) {
+                        indicator.parentNode.removeChild(indicator);
+                    }
+                }, 5000);
+                
+                // También mostrar toast
+                Swal.fire({
+                    title: '🚀 Sistema SweetAlert Listo',
+                    html: `
+                        <div class="alert alert-success">
+                            <h6><i class="bi bi-check-circle-fill"></i> Sistema Operativo</h6>
+                            <p class="mb-0">Los concejales con múltiples bloques aparecerán resaltados en amarillo. Haga clic en ellos para seleccionar el bloque.</p>
+                        </div>
+                    `,
+                    timer: 4000,
+                    timerProgressBar: true,
+                    showConfirmButton: false,
+                    toast: true,
+                    position: 'top-end',
+                    customClass: {
+                        container: 'swal-sistema-listo'
+                    }
+                });
+            } else {
+                console.error('❌ SweetAlert NO disponible');
+            }
+        }, 1000);
 
         // Mensaje de bienvenida si no hay iniciadores
         if (todasLasOpciones.length === 0) {

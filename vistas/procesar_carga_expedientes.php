@@ -65,12 +65,26 @@ try {
         } elseif ($tipo === 'PJ') {
             $stmt = $db_iniciadores->prepare("SELECT CONCAT(razon_social, ' (', cuit, ')') as nombre_completo FROM persona_juri_entidad WHERE id = ?");
         } elseif ($tipo === 'CO') {
-            $stmt = $db_iniciadores->prepare("SELECT CONCAT(apellido, ', ', nombre, ' - ', bloque) as nombre_completo FROM concejales WHERE id = ?");
-        }
-        $stmt->execute([$id]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        if ($row && !empty($row['nombre_completo'])) {
-            $nombre_iniciador = $row['nombre_completo'];
+            // Para concejales, verificar si se seleccionó un bloque específico
+            $bloque_seleccionado = sanear_input($_POST['bloque_concejal_seleccionado'] ?? '');
+            
+            if (!empty($bloque_seleccionado)) {
+                // Usar el bloque específico seleccionado
+                $stmt = $db_iniciadores->prepare("SELECT CONCAT(apellido, ', ', nombre) as nombre_completo FROM concejales WHERE id = ?");
+                $stmt->execute([$id]);
+                $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                if ($row && !empty($row['nombre_completo'])) {
+                    $nombre_iniciador = $row['nombre_completo'] . ' - ' . $bloque_seleccionado;
+                }
+            } else {
+                // Usar el bloque actual por defecto
+                $stmt = $db_iniciadores->prepare("SELECT CONCAT(apellido, ', ', nombre, ' - ', bloque) as nombre_completo FROM concejales WHERE id = ?");
+                $stmt->execute([$id]);
+                $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                if ($row && !empty($row['nombre_completo'])) {
+                    $nombre_iniciador = $row['nombre_completo'];
+                }
+            }
         }
     }
 
