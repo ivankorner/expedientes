@@ -281,9 +281,12 @@ if (isset($_GET['debug']) && $_GET['debug'] == '1') {
                                           name="extracto" 
                                           class="form-control" 
                                           rows="3" 
-                                          placeholder="Ingrese un extracto"
+                                          placeholder="Ingrese un extracto (puede escribir todo el texto que necesite, sin límites)"
                                           required></textarea>
-                                <div class="form-text">Sin límite de caracteres.</div>
+                                <div class="form-text text-success">
+                                    <i class="bi bi-check-circle me-1"></i>
+                                    ✅ Sin límite de caracteres - Puede escribir todo el texto que necesite
+                                </div>
                                 <div class="invalid-feedback">Por favor ingrese un extracto</div>
                             </div>
 

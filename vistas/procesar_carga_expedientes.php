@@ -31,12 +31,7 @@ try {
             throw new Exception("Todos los campos son obligatorios");
         }
     }
-
-    // Validar longitud del extracto
-    if (strlen($_POST['extracto']) > 300) {
-        throw new Exception("El extracto no puede superar los 300 caracteres");
-    }
-
+ 
     // Conectar a la base de datos
     $db = new PDO(
         "mysql:host=localhost;dbname=c2810161_iniciad;charset=utf8mb4",
