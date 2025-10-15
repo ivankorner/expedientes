@@ -1779,6 +1779,11 @@ if (isset($_GET['debug']) && $_GET['debug'] == '1') {
         // Validación del formulario mejorada
         const form = document.querySelector('form');
         form.addEventListener('submit', function(e) {
+            // Debug: Mostrar valores antes de enviar
+            console.log('=== ENVÍO DE FORMULARIO ===');
+            console.log('Valor del select iniciador:', selectIniciador.value);
+            console.log('Bloque concejal seleccionado:', document.getElementById('bloque_concejal_seleccionado').value);
+            
             if (!selectIniciador.value) {
                 e.preventDefault();
                 Swal.fire({
@@ -1798,53 +1803,14 @@ if (isset($_GET['debug']) && $_GET['debug'] == '1') {
                 
                 return false;
             }
+            
+            console.log('Formulario validado, enviando...');
         });
 
         // Auto-foco en el campo de búsqueda
         setTimeout(() => {
             buscarIniciador.focus();
         }, 500);
-
-        // PRUEBA IMMEDIATA DE SWEETALERT - REMOVER DESPUÉS
-        setTimeout(() => {
-            if (typeof Swal !== 'undefined') {
-                console.log('🎉 SWEETALERT FUNCIONANDO - Mostrando indicadores');
-                
-                // Crear indicador visual en la página
-                const indicator = document.createElement('div');
-                indicator.className = 'sistema-listo';
-                indicator.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i>Sistema SweetAlert Listo';
-                document.body.appendChild(indicator);
-                
-                // Remover después de 5 segundos
-                setTimeout(() => {
-                    if (indicator.parentNode) {
-                        indicator.parentNode.removeChild(indicator);
-                    }
-                }, 5000);
-                
-                // También mostrar toast
-                Swal.fire({
-                    title: '🚀 Sistema SweetAlert Listo',
-                    html: `
-                        <div class="alert alert-success">
-                            <h6><i class="bi bi-check-circle-fill"></i> Sistema Operativo</h6>
-                            <p class="mb-0">Los concejales con múltiples bloques aparecerán resaltados en amarillo. Haga clic en ellos para seleccionar el bloque.</p>
-                        </div>
-                    `,
-                    timer: 4000,
-                    timerProgressBar: true,
-                    showConfirmButton: false,
-                    toast: true,
-                    position: 'top-end',
-                    customClass: {
-                        container: 'swal-sistema-listo'
-                    }
-                });
-            } else {
-                console.error('❌ SweetAlert NO disponible');
-            }
-        }, 1000);
 
         // Mensaje de bienvenida si no hay iniciadores
         if (todasLasOpciones.length === 0) {
