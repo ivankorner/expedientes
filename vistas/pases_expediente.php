@@ -398,6 +398,9 @@ try {
                                                id="fecha_hora" 
                                                name="fecha_hora"
                                                required
+                                               autocomplete="off"
+                                               min="1900-01-01T00:00"
+                                               max="2100-12-31T23:59"
                                                style="border: 2px solid #e8e9fd;">
                                         <label for="fecha_hora" class="d-flex align-items-center">
                                             <i class="bi bi-calendar-event-fill me-2" style="color: #f59e0b;"></i>
@@ -752,6 +755,48 @@ document.getElementById('otro_lugar_texto').addEventListener('input', function()
     const lugarFinal = document.getElementById('lugar_nuevo_final');
     lugarFinal.value = this.value;
 });
+
+// Mejorar comportamiento del campo datetime-local para permitir entrada manual
+const fechaHoraInput = document.getElementById('fecha_hora');
+if (fechaHoraInput) {
+    // Prevenir el salto automático entre campos de fecha y hora
+    fechaHoraInput.addEventListener('keydown', function(e) {
+        // Permitir navegación con teclado sin restricciones
+        const allowedKeys = ['Tab', 'ArrowLeft', 'ArrowRight', 'Backspace', 'Delete', 'Home', 'End'];
+        if (allowedKeys.includes(e.key)) {
+            return true;
+        }
+    });
+    
+    // Validar el año ingresado (debe tener 4 dígitos)
+    fechaHoraInput.addEventListener('change', function(e) {
+        if (this.value) {
+            const fecha = new Date(this.value);
+            const year = fecha.getFullYear();
+            
+            // Validar que el año esté en un rango razonable (1900-2100)
+            if (year < 1900 || year > 2100) {
+                Swal.fire({
+                    title: 'Año inválido',
+                    text: 'El año debe estar entre 1900 y 2100',
+                    icon: 'warning',
+                    confirmButtonText: 'Aceptar'
+                });
+                this.value = '';
+                this.focus();
+            }
+        }
+    });
+    
+    // Mejorar la experiencia de usuario
+    fechaHoraInput.addEventListener('focus', function() {
+        this.style.borderColor = '#667eea';
+    });
+    
+    fechaHoraInput.addEventListener('blur', function() {
+        this.style.borderColor = '#e8e9fd';
+    });
+}
 
 // Manejar envío del formulario de nuevo pase
 document.getElementById('formPase').addEventListener('submit', function(e) {
