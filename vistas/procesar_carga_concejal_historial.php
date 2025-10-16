@@ -21,6 +21,31 @@ try {
         throw new Exception("Ya existe un concejal con el DNI: " . $_POST['dni']);
     }
 
+    // Crear tabla de historial de bloques si no existe (ANTES de la transacción)
+    // IMPORTANTE: CREATE TABLE fuera de transacción evita problemas en servidores compartidos
+    try {
+        $db->exec("
+            CREATE TABLE IF NOT EXISTS concejal_bloques_historial (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                concejal_id INT NOT NULL,
+                nombre_bloque VARCHAR(200) NOT NULL,
+                fecha_inicio DATE,
+                fecha_fin DATE NULL,
+                es_actual BOOLEAN DEFAULT FALSE,
+                observacion TEXT,
+                eliminado BOOLEAN DEFAULT FALSE,
+                fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (concejal_id) REFERENCES concejales(id) ON DELETE CASCADE,
+                INDEX idx_concejal_fecha (concejal_id, fecha_inicio)
+            )
+        ");
+    } catch (Exception $e) {
+        // Ignorar si la tabla ya existe
+        if (strpos($e->getMessage(), 'already exists') === false) {
+            throw $e;
+        }
+    }
+
     // Comenzar transacción
     $db->beginTransaction();
 
@@ -45,22 +70,6 @@ try {
     ]);
 
     $concejal_id = $db->lastInsertId();
-
-    // Crear tabla de historial de bloques si no existe
-    $db->exec("
-        CREATE TABLE IF NOT EXISTS concejal_bloques_historial (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            concejal_id INT NOT NULL,
-            nombre_bloque VARCHAR(200) NOT NULL,
-            fecha_inicio DATE,
-            fecha_fin DATE NULL,
-            es_actual BOOLEAN DEFAULT FALSE,
-            observacion TEXT,
-            fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (concejal_id) REFERENCES concejales(id) ON DELETE CASCADE,
-            INDEX idx_concejal_fecha (concejal_id, fecha_inicio)
-        )
-    ");
 
     // Insertar bloque actual en el historial
     $stmt = $db->prepare("
@@ -112,9 +121,13 @@ try {
     exit;
 
 } catch (Exception $e) {
-    // Revertir transacción en caso de error
-    if ($db->inTransaction()) {
-        $db->rollback();
+    // Revertir transacción en caso de error (si existe una activa)
+    try {
+        if (isset($db) && method_exists($db, 'inTransaction') && $db->inTransaction()) {
+            $db->rollback();
+        }
+    } catch (Exception $rollbackError) {
+        // Ignorar errores al hacer rollback
     }
     
     $_SESSION['mensaje'] = "Error al guardar el concejal: " . $e->getMessage();
