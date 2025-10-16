@@ -106,6 +106,10 @@ try {
     $_SESSION['mensaje'] = "Concejal guardado exitosamente con historial de bloques";
     $_SESSION['tipo_mensaje'] = "success";
     $_SESSION['concejal_id'] = $concejal_id;
+    
+    // Redireccionar a la lista de concejales
+    header("Location: listar_concejales.php");
+    exit;
 
 } catch (Exception $e) {
     // Revertir transacción en caso de error
@@ -118,9 +122,9 @@ try {
     
     // Preservar datos del formulario
     $_SESSION['form_data'] = $_POST;
+    
+    // Redireccionar de vuelta al formulario
+    header("Location: carga_concejal.php");
+    exit;
 }
-
-// Redireccionar de vuelta al formulario
-header("Location: carga_concejal.php");
-exit;
 ?>
