@@ -12,14 +12,18 @@ try {
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
     );
 
-    // Consultar personas físicas
-    $stmt = $db->query("SELECT id, CONCAT(apellido, ', ', nombre, ' (', dni, ')') as nombre_completo 
+    // Consultar personas físicas - incluir DNI como campo separado
+    $stmt = $db->query("SELECT id, 
+                               dni, 
+                               CONCAT(apellido, ', ', nombre, ' (', dni, ')') as nombre_completo 
                         FROM persona_fisica 
                         ORDER BY apellido, nombre");
     $personas_fisicas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Consultar personas jurídicas
-    $stmt = $db->query("SELECT id, CONCAT(razon_social, ' (', cuit, ')') as nombre_completo 
+    // Consultar personas jurídicas - incluir CUIT como campo separado
+    $stmt = $db->query("SELECT id, 
+                               cuit, 
+                               CONCAT(razon_social, ' (', cuit, ')') as nombre_completo 
                         FROM persona_juri_entidad 
                         ORDER BY razon_social");
     $personas_juridicas = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -371,7 +375,7 @@ if (isset($_GET['debug']) && $_GET['debug'] == '1') {
                                                         <option value="PF-<?= $persona['id'] ?>" 
                                                                 data-nombre="<?= htmlspecialchars($persona['nombre_completo']) ?>"
                                                                 data-tipo="Persona Física"
-                                                                data-search="<?= strtolower(htmlspecialchars($persona['nombre_completo'])) ?>">
+                                                                data-search="<?= strtolower(htmlspecialchars($persona['nombre_completo'] . ' ' . $persona['dni'])) ?>">
                                                             <?= htmlspecialchars($persona['nombre_completo']) ?>
                                                         </option>
                                                     <?php endforeach; ?>
@@ -384,7 +388,7 @@ if (isset($_GET['debug']) && $_GET['debug'] == '1') {
                                                         <option value="PJ-<?= $entidad['id'] ?>" 
                                                                 data-nombre="<?= htmlspecialchars($entidad['nombre_completo']) ?>"
                                                                 data-tipo="Persona Jurídica"
-                                                                data-search="<?= strtolower(htmlspecialchars($entidad['nombre_completo'])) ?>">
+                                                                data-search="<?= strtolower(htmlspecialchars($entidad['nombre_completo'] . ' ' . $entidad['cuit'])) ?>">
                                                             <?= htmlspecialchars($entidad['nombre_completo']) ?>
                                                         </option>
                                                     <?php endforeach; ?>
@@ -394,10 +398,19 @@ if (isset($_GET['debug']) && $_GET['debug'] == '1') {
                                             <?php if (!empty($concejales)): ?>
                                                 <optgroup label="🏛️ Concejales">
                                                     <?php foreach ($concejales as $concejal): ?>
+                                                        <?php 
+                                                            // Construir string de búsqueda con todos los bloques
+                                                            $bloques_search = '';
+                                                            if (!empty($concejal['bloques'])) {
+                                                                $bloques_nombres = array_column($concejal['bloques'], 'nombre_bloque');
+                                                                $bloques_search = ' ' . implode(' ', $bloques_nombres);
+                                                            }
+                                                            $search_completo = $concejal['nombre_completo'] . ' ' . $concejal['bloque_actual'] . $bloques_search;
+                                                        ?>
                                                         <option value="CO-<?= $concejal['id'] ?>" 
                                                                 data-nombre="<?= htmlspecialchars($concejal['nombre_completo']) ?>"
                                                                 data-tipo="Concejal"
-                                                                data-search="<?= strtolower(htmlspecialchars($concejal['nombre_completo'] . ' ' . $concejal['bloque_actual'])) ?>"
+                                                                data-search="<?= strtolower(htmlspecialchars($search_completo)) ?>"
                                                                 data-concejal-id="<?= $concejal['id'] ?>"
                                                                 data-bloques='<?= htmlspecialchars(json_encode($concejal['bloques']), ENT_QUOTES) ?>'
                                                                 data-bloque-actual="<?= htmlspecialchars($concejal['bloque_actual']) ?>">
@@ -510,13 +523,21 @@ if (isset($_GET['debug']) && $_GET['debug'] == '1') {
     
     <!-- Estilos adicionales para la búsqueda intuitiva -->
     <style>
-        /* Estilos para el resaltado de búsqueda */
+        /* Estilos para el resaltado de búsqueda - MEJORADO */
         mark {
-            background-color: #fff3cd;
-            padding: 2px 4px;
-            border-radius: 3px;
-            font-weight: bold;
-            color: #856404;
+            background: linear-gradient(120deg, #ffeb3b 0%, #fff3cd 100%);
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-weight: 700;
+            color: #333;
+            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+            box-shadow: 0 2px 4px rgba(255, 235, 59, 0.3);
+            transition: all 0.2s ease;
+        }
+        
+        mark:hover {
+            background: linear-gradient(120deg, #ffd54f 0%, #ffeb3b 100%);
+            box-shadow: 0 4px 8px rgba(255, 235, 59, 0.5);
         }
         
         /* Card de iniciador mejorado */
@@ -1316,7 +1337,7 @@ if (isset($_GET['debug']) && $_GET['debug'] == '1') {
             console.error('❌ SweetAlert2 NO está disponible');
         }
 
-        // Función para buscar iniciadores
+        // Función para buscar iniciadores - MEJORADA
         function buscarIniciadores(termino) {
             if (!termino || termino.length < 2) {
                 ocultarResultados();
@@ -1324,9 +1345,30 @@ if (isset($_GET['debug']) && $_GET['debug'] == '1') {
             }
 
             const terminoLimpio = termino.toLowerCase().trim();
-            const resultados = todasLasOpciones.filter(opcion => 
-                opcion.search.includes(terminoLimpio)
-            );
+            
+            // Dividir el término en palabras para búsqueda más flexible
+            const palabras = terminoLimpio.split(/\s+/);
+            
+            // Buscar coincidencias usando todas las palabras
+            const resultados = todasLasOpciones.filter(opcion => {
+                const textoCompleto = opcion.search;
+                
+                // Al menos una palabra debe coincidir
+                return palabras.some(palabra => textoCompleto.includes(palabra));
+            })
+            // Ordenar por relevancia - prioritar coincidencias tempranas
+            .sort((a, b) => {
+                const posA = a.search.indexOf(terminoLimpio);
+                const posB = b.search.indexOf(terminoLimpio);
+                
+                // Priorizar búsqueda exacta al inicio
+                if (posA === 0 && posB !== 0) return -1;
+                if (posA !== 0 && posB === 0) return 1;
+                if (posA !== -1 && posB === -1) return -1;
+                if (posA === -1 && posB !== -1) return 1;
+                
+                return posA - posB;
+            });
 
             mostrarResultados(resultados, terminoLimpio);
         }
@@ -1424,11 +1466,22 @@ if (isset($_GET['debug']) && $_GET['debug'] == '1') {
             mostrarContenedorResultados();
         }
 
-        // Función para resaltar términos de búsqueda
+        // Función para resaltar términos de búsqueda - MEJORADA
         function resaltarTermino(texto, termino) {
             if (!termino) return texto;
-            const regex = new RegExp(`(${termino})`, 'gi');
-            return texto.replace(regex, '<mark>$1</mark>');
+            
+            // Dividir en palabras y resaltar cada una
+            const palabras = termino.split(/\s+/);
+            let textoResaltado = texto;
+            
+            palabras.forEach(palabra => {
+                if (palabra.length > 0) {
+                    const regex = new RegExp(`(${palabra})`, 'gi');
+                    textoResaltado = textoResaltado.replace(regex, '<mark>$1</mark>');
+                }
+            });
+            
+            return textoResaltado;
         }
 
         // Función para obtener icono según tipo
