@@ -590,10 +590,20 @@ try {
                 <i class="bi bi-arrow-down-circle-fill me-1"></i>
                 Ingreso
             </span>
-        <?php else: ?>
+        <?php elseif ($pase['tipo_movimiento'] === 'Salida'): ?>
             <span class="badge px-3 py-2 rounded-pill" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
                 <i class="bi bi-arrow-up-circle-fill me-1"></i>
                 Salida
+            </span>
+        <?php elseif ($pase['tipo_movimiento'] === 'Aprobado'): ?>
+            <span class="badge px-3 py-2 rounded-pill" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
+                <i class="bi bi-check-circle-fill me-1"></i>
+                Aprobado
+            </span>
+        <?php else: ?>
+            <span class="badge px-3 py-2 rounded-pill" style="background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);">
+                <i class="bi bi-info-circle-fill me-1"></i>
+                <?= htmlspecialchars($pase['tipo_movimiento']) ?>
             </span>
         <?php endif; ?>
     </td>
@@ -921,6 +931,7 @@ function editarPaseModal(fecha, lugar, id, tipoMovimiento = '', numeroActa = '')
         <option value="">Seleccione tipo de movimiento...</option>
         <option value="Ingreso"${tipoMovimiento === 'Ingreso' ? ' selected' : ''}>Ingreso</option>
         <option value="Salida"${tipoMovimiento === 'Salida' ? ' selected' : ''}>Salida</option>
+        <option value="Aprobado"${tipoMovimiento === 'Aprobado' ? ' selected' : ''}>Aprobado</option>
     </select>`;
     
     Swal.fire({
