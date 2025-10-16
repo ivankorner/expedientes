@@ -383,6 +383,7 @@ try {
                                             <option value="">Seleccione tipo...</option>
                                             <option value="Ingreso">📥 Ingreso</option>
                                             <option value="Salida">📤 Salida</option>
+                                            <option value="Aprobado">✅ Aprobado</option>
                                         </select>
                                         <label for="tipo_movimiento" class="d-flex align-items-center">
                                             <i class="bi bi-arrow-left-right me-2" style="color: #10b981;"></i>
