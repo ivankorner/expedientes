@@ -34,45 +34,85 @@ try {
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
     );
 
-    // Preparar búsqueda en múltiples campos
-    $sql = "SELECT 
-                id,
-                numero,
-                letra,
-                folio,
-                libro,
-                anio,
-                DATE_FORMAT(fecha_hora_ingreso, '%d/%m/%Y') as fecha_ingreso,
-                extracto,
-                CASE 
-                    WHEN LENGTH(extracto) > 50 
-                    THEN CONCAT(SUBSTRING(extracto, 1, 50), '...') 
-                    ELSE extracto 
-                END as extracto_corto,
-                iniciador,
-                lugar
-            FROM expedientes 
-            WHERE numero LIKE :termino
-               OR letra LIKE :termino
-               OR folio LIKE :termino
-               OR libro LIKE :termino
-               OR anio LIKE :termino
-               OR extracto LIKE :termino_texto
-               OR iniciador LIKE :termino_texto
-               OR lugar LIKE :termino_texto
-            ORDER BY fecha_hora_ingreso DESC 
-            LIMIT 8";
+    // Detectar si es búsqueda de expediente completo (formato: numero letra folio)
+    $esCodigoCompleto = preg_match('/^(\d+)\s*([A-Za-z])\s*(\d+)/', $termino, $matches);
+    
+    if ($esCodigoCompleto) {
+        // Búsqueda específica por código de expediente
+        $numero = $matches[1];
+        $letra = strtoupper($matches[2]);
+        $folio = $matches[3];
+        
+        $sql = "SELECT 
+                    id,
+                    numero,
+                    letra,
+                    folio,
+                    libro,
+                    anio,
+                    DATE_FORMAT(fecha_hora_ingreso, '%d/%m/%Y') as fecha_ingreso,
+                    extracto,
+                    CASE 
+                        WHEN LENGTH(extracto) > 50 
+                        THEN CONCAT(SUBSTRING(extracto, 1, 50), '...') 
+                        ELSE extracto 
+                    END as extracto_corto,
+                    iniciador,
+                    lugar
+                FROM expedientes 
+                WHERE numero = :numero 
+                   AND letra = :letra 
+                   AND folio = :folio
+                ORDER BY fecha_hora_ingreso DESC 
+                LIMIT 8";
+        
+        $params = [
+            ':numero' => $numero,
+            ':letra' => $letra,
+            ':folio' => $folio
+        ];
+        
+    } else {
+        // Búsqueda general en múltiples campos
+        $sql = "SELECT 
+                    id,
+                    numero,
+                    letra,
+                    folio,
+                    libro,
+                    anio,
+                    DATE_FORMAT(fecha_hora_ingreso, '%d/%m/%Y') as fecha_ingreso,
+                    extracto,
+                    CASE 
+                        WHEN LENGTH(extracto) > 50 
+                        THEN CONCAT(SUBSTRING(extracto, 1, 50), '...') 
+                        ELSE extracto 
+                    END as extracto_corto,
+                    iniciador,
+                    lugar
+                FROM expedientes 
+                WHERE numero LIKE :termino
+                   OR letra LIKE :termino
+                   OR folio LIKE :termino
+                   OR libro LIKE :termino
+                   OR anio LIKE :termino
+                   OR extracto LIKE :termino_texto
+                   OR iniciador LIKE :termino_texto
+                   OR lugar LIKE :termino_texto
+                   OR CONCAT(numero, ' ', letra, ' ', folio) LIKE :termino_codigo
+                ORDER BY fecha_hora_ingreso DESC 
+                LIMIT 8";
+        
+        $termino_like = '%' . $termino . '%';
+        $params = [
+            ':termino' => $termino_like,
+            ':termino_texto' => $termino_like,
+            ':termino_codigo' => $termino_like
+        ];
+    }
 
     $stmt = $db->prepare($sql);
-    
-    // Parámetros de búsqueda
-    $termino_like = '%' . $termino . '%';
-    $termino_texto = '%' . $termino . '%';
-    
-    $stmt->execute([
-        ':termino' => $termino_like,
-        ':termino_texto' => $termino_texto
-    ]);
+    $stmt->execute($params);
 
     $expedientes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
